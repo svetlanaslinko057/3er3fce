@@ -413,6 +413,11 @@ class ConnectionsDropdownTester:
         self.run_test("Connections Graph API GET /api/connections/graph", self.test_connections_graph_get)
         self.run_test("Connections Compare API /api/connections/compare", self.test_connections_compare_api)
         
+        # Graph-specific API Tests
+        self.run_test("Graph Suggestions API /api/connections/graph/suggestions", self.test_graph_suggestions_api)
+        self.run_test("Graph Ranking API /api/connections/graph/ranking", self.test_graph_ranking_api)
+        self.run_test("Graph Node Details API /api/connections/graph/node/{id}", self.test_graph_node_details_api)
+        
         # Results Summary
         success_rate = (self.tests_passed / self.tests_run * 100) if self.tests_run > 0 else 0
         
