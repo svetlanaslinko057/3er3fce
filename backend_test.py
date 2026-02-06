@@ -605,6 +605,13 @@ class ConnectionsDropdownTester:
         self.run_test("Graph Ranking API /api/connections/graph/ranking", self.test_graph_ranking_api)
         self.run_test("Graph Node Details API /api/connections/graph/node/{id}", self.test_graph_node_details_api)
         
+        # P2.2: Graph State Sharing API Tests
+        self.run_test("Graph State Info API /api/connections/graph/state/info", self.test_graph_state_info_api)
+        self.run_test("Graph State Encode API /api/connections/graph/state/encode", self.test_graph_state_encode_api)
+        self.run_test("Graph State Decode API /api/connections/graph/state/decode", self.test_graph_state_decode_api)
+        self.run_test("Graph State Encode with BaseUrl /api/connections/graph/state/encode", self.test_graph_state_encode_with_base_url)
+        self.run_test("Graph State Validation Errors", self.test_graph_state_validation_errors)
+        
         # Results Summary
         success_rate = (self.tests_passed / self.tests_run * 100) if self.tests_run > 0 else 0
         
