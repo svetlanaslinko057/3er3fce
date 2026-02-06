@@ -282,24 +282,35 @@ Connections Module работает НЕЗАВИСИМО:
 
 ## Roadmap
 
-### ✅ Phase 1: Foundation (DONE)
+### ✅ Phase 0: Foundation (DONE)
 - [x] Scoring Engine
 - [x] Trend Analysis
 - [x] Early Signal Detection
 - [x] Admin Control Plane
 - [x] Alerts Engine (preview-only)
 
-### 🔄 Phase 2: Integration (NEXT)
-- [ ] Twitter Live Data
-- [ ] Alert Delivery (Telegram/Discord)
-- [ ] Historical Data Storage
-- [ ] Performance Optimization
+### ✅ Phase 1: Twitter Score Core (DONE)
+- [x] **1.1 Unified Twitter Score** — единый рейтинг 0-1000
+- [x] **1.2 Audience Quality Engine** — качество аудитории
+- [x] **1.3 Hops / Social Distance** — социальная дистанция
 
-### 📋 Phase 3: Intelligence
-- [ ] ML-enhanced Scoring
-- [ ] Network Graph Analysis
-- [ ] Cross-platform (Reddit, Telegram)
-- [ ] Prediction Models
+> 📘 Подробная документация: [TWITTER_SCORE_CORE.md](./TWITTER_SCORE_CORE.md)
+
+### ✅ Phase 2: Share & Delivery (DONE)
+- [x] P2.1 Telegram Delivery
+- [x] P2.2 Share Graph State
+
+> 📘 Подробная документация: [TELEGRAM_BOT.md](./TELEGRAM_BOT.md)
+
+### 🔄 Phase 3: Time & Behavior Analytics (NEXT)
+- [ ] 3.1 Time Series Storage
+- [ ] 3.2 Charts & Timelines UI
+- [ ] 3.3 AI Summary Engine
+
+### 📋 Phase 4: Twitter Integration
+- [ ] Twitter Live Data
+- [ ] Real Follower/Follow Graph
+- [ ] Performance Optimization
 
 ---
 
