@@ -1428,7 +1428,20 @@ export async function registerConnectionsRoutes(app: FastifyInstance): Promise<v
   const { twitterScoreRoutes } = await import('./twitter-score.routes.js');
   await app.register(twitterScoreRoutes);
 
+  // ============================================================
+  // AUDIENCE QUALITY API v1.0 (Phase 1.2)
+  // ============================================================
+  
+  // Register Audience Quality routes
+  const { audienceQualityRoutes } = await import('./audience-quality.routes.js');
+  await app.register(audienceQualityRoutes);
+
+  // Register Audience Quality Admin routes
+  const { audienceQualityAdminRoutes } = await import('../admin/audience-quality-admin.routes.js');
+  await app.register(audienceQualityAdminRoutes);
+
   console.log('[Connections] API routes registered at /api/connections');
   console.log('[Connections] Graph API registered at /api/connections/graph');
   console.log('[Connections] Twitter Score API registered at /api/connections/twitter-score');
+  console.log('[Connections] Audience Quality API registered at /api/connections/audience-quality');
 }
