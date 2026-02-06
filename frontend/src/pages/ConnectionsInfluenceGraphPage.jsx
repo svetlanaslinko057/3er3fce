@@ -620,6 +620,12 @@ export default function ConnectionsInfluenceGraphPage() {
           </div>
         </div>
 
+        {/* Suggestions Panel */}
+        <SuggestionsPanel
+          onSelect={handleRankingSelect}
+          selectedId={selectedNode?.id}
+        />
+
         {/* Graph Container */}
         <div className="relative bg-[#0a0e1a] rounded-xl overflow-hidden mb-6" style={{ height: '500px' }}>
           {loading ? (
