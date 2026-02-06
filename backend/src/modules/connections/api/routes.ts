@@ -1440,8 +1440,21 @@ export async function registerConnectionsRoutes(app: FastifyInstance): Promise<v
   const { audienceQualityAdminRoutes } = await import('../admin/audience-quality-admin.routes.js');
   await app.register(audienceQualityAdminRoutes);
 
+  // ============================================================
+  // HOPS / SOCIAL DISTANCE API v1.0 (Phase 1.3)
+  // ============================================================
+  
+  // Register Hops routes
+  const { hopsRoutes } = await import('./hops.routes.js');
+  await app.register(hopsRoutes);
+
+  // Register Hops Admin routes
+  const { hopsAdminRoutes } = await import('../admin/hops-admin.routes.js');
+  await app.register(hopsAdminRoutes);
+
   console.log('[Connections] API routes registered at /api/connections');
   console.log('[Connections] Graph API registered at /api/connections/graph');
   console.log('[Connections] Twitter Score API registered at /api/connections/twitter-score');
   console.log('[Connections] Audience Quality API registered at /api/connections/audience-quality');
+  console.log('[Connections] Hops API registered at /api/connections/hops');
 }
