@@ -1,633 +1,620 @@
 #!/usr/bin/env python3
-"""
-Twitter Score v1.0 Backend API Testing
-Tests the unified Twitter Score layer APIs for Phase 1.1
-"""
 
 import requests
+import sys
 import json
 import time
-import sys
 from datetime import datetime
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Any
 
-# Use production URL from frontend .env
-BACKEND_URL = "https://isolated-model.preview.emergentagent.com"
-
-class TwitterScoreTester:
-    def __init__(self):
-        self.base_url = BACKEND_URL
+class AudienceQualityTester:
+    def __init__(self, base_url="https://isolated-model.preview.emergentagent.com"):
+        self.base_url = base_url
         self.tests_run = 0
         self.tests_passed = 0
         self.failed_tests = []
-        self.session = requests.Session()
-        self.session.timeout = 30
-        
-    def log(self, message: str, level: str = "INFO"):
-        """Log test messages with timestamp"""
-        timestamp = datetime.now().strftime("%H:%M:%S")
-        print(f"[{timestamp}] {level}: {message}")
-        
-    def run_test(self, name: str, test_func, expected_result: Any = True) -> bool:
-        """Run a single test and track results"""
+
+    def log(self, message: str):
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] {message}")
+
+    def run_test(self, name: str, method: str, endpoint: str, expected_status: int, 
+                 data: Any = None, headers: Dict = None) -> tuple[bool, Dict]:
+        """Run a single API test"""
+        url = f"{self.base_url}/api/connections/{endpoint}"
+        if not headers:
+            headers = {'Content-Type': 'application/json'}
+
         self.tests_run += 1
         self.log(f"🔍 Testing {name}...")
         
         try:
-            result = test_func()
-            if result == expected_result or (expected_result is True and result):
+            if method == 'GET':
+                response = requests.get(url, headers=headers, timeout=30)
+            elif method == 'POST':
+                response = requests.post(url, json=data, headers=headers, timeout=30)
+            elif method == 'PATCH':
+                response = requests.patch(url, json=data, headers=headers, timeout=30)
+            else:
+                raise ValueError(f"Unsupported method: {method}")
+
+            success = response.status_code == expected_status
+            if success:
                 self.tests_passed += 1
-                self.log(f"✅ PASSED: {name}", "SUCCESS")
+                self.log(f"✅ Passed - Status: {response.status_code}")
+                try:
+                    return success, response.json()
+                except:
+                    return success, {"raw_response": response.text}
+            else:
+                self.log(f"❌ Failed - Expected {expected_status}, got {response.status_code}")
+                self.log(f"   Response: {response.text[:200]}...")
+                self.failed_tests.append({
+                    "name": name,
+                    "endpoint": endpoint,
+                    "expected": expected_status,
+                    "got": response.status_code,
+                    "response": response.text
+                })
+                try:
+                    return success, response.json()
+                except:
+                    return success, {"error": response.text}
+
+        except Exception as e:
+            self.log(f"❌ Failed - Error: {str(e)}")
+            self.failed_tests.append({
+                "name": name,
+                "endpoint": endpoint,
+                "error": str(e)
+            })
+            return False, {"error": str(e)}
+
+    def test_audience_quality_info(self):
+        """Test GET /audience-quality/info"""
+        success, response = self.run_test(
+            "Audience Quality Info",
+            "GET",
+            "audience-quality/info",
+            200
+        )
+        
+        if success:
+            data = response.get('data', {})
+            required_fields = ['version', 'weights', 'overlap_thresholds', 'quality_thresholds', 'components']
+            for field in required_fields:
+                if field not in data:
+                    self.log(f"❌ Missing required field: {field}")
+                    return False
+            
+            # Validate version
+            if data.get('version') != '1.0.0':
+                self.log(f"❌ Unexpected version: {data.get('version')}")
+                return False
+                
+            # Validate weights structure
+            weights = data.get('weights', {})
+            expected_weight_keys = ['purity', 'smart_followers_proxy', 'signal_quality', 'consistency']
+            for key in expected_weight_keys:
+                if key not in weights:
+                    self.log(f"❌ Missing weight: {key}")
+                    return False
+                    
+            self.log("✅ All required fields present and valid")
+        
+        return success
+
+    def test_audience_quality_mock(self):
+        """Test GET /audience-quality/mock"""
+        success, response = self.run_test(
+            "Audience Quality Mock Data",
+            "GET",
+            "audience-quality/mock",
+            200
+        )
+        
+        if success:
+            data = response.get('data', {})
+            required_fields = ['version', 'description', 'results', 'quality_distribution']
+            for field in required_fields:
+                if field not in data:
+                    self.log(f"❌ Missing required field: {field}")
+                    return False
+            
+            # Validate results structure
+            results = data.get('results', [])
+            if len(results) < 3:
+                self.log(f"❌ Expected at least 3 mock results, got {len(results)}")
+                return False
+                
+            # Check first result structure
+            if results:
+                result = results[0]
+                required_result_fields = ['account_id', 'audience_quality_score_0_1', 'confidence', 'evidence', 'explain']
+                for field in required_result_fields:
+                    if field not in result:
+                        self.log(f"❌ Missing result field: {field}")
+                        return False
+                        
+            # Validate quality distribution
+            quality_dist = data.get('quality_distribution', {})
+            if not all(key in quality_dist for key in ['high', 'medium', 'low']):
+                self.log(f"❌ Invalid quality distribution structure")
+                return False
+                
+            self.log("✅ Mock data structure is valid")
+        
+        return success
+
+    def test_audience_quality_compute(self):
+        """Test POST /audience-quality"""
+        test_input = {
+            "account_id": "test_account_001",
+            "x_score": 750,
+            "signal_noise": 6.5,
+            "consistency_0_1": 0.65,
+            "red_flags": ["VIRAL_SPIKE"],
+            "overlap": {
+                "avg_jaccard": 0.08,
+                "max_jaccard": 0.15,
+                "avg_shared": 25,
+                "max_shared": 60,
+                "sample_size": 8
+            }
+        }
+        
+        success, response = self.run_test(
+            "Audience Quality Compute",
+            "POST",
+            "audience-quality",
+            200,
+            data=test_input
+        )
+        
+        if success:
+            data = response.get('data', {})
+            required_fields = ['account_id', 'audience_quality_score_0_1', 'confidence', 'evidence', 'explain', 'meta']
+            for field in required_fields:
+                if field not in data:
+                    self.log(f"❌ Missing result field: {field}")
+                    return False
+            
+            # Validate score range
+            score = data.get('audience_quality_score_0_1')
+            if not (0 <= score <= 1):
+                self.log(f"❌ Score out of range: {score}")
+                return False
+                
+            # Validate evidence structure
+            evidence = data.get('evidence', {})
+            expected_evidence_fields = ['overlap_pressure_0_1', 'bot_risk_0_1', 'purity_0_1', 'inputs_used']
+            for field in expected_evidence_fields:
+                if field not in evidence:
+                    self.log(f"❌ Missing evidence field: {field}")
+                    return False
+            
+            # Validate formula: high overlap + red_flags should affect score
+            overlap_pressure = evidence.get('overlap_pressure_0_1', 0)
+            bot_risk = evidence.get('bot_risk_0_1', 0)
+            purity = evidence.get('purity_0_1', 0)
+            
+            # Since we have red flags and some overlap, purity should be lower
+            if purity > 0.8:  # Should be affected by red flags and overlap
+                self.log(f"⚠️  Purity seems high despite red flags: {purity}")
+                
+            self.log(f"✅ Score: {score:.3f}, Purity: {purity:.3f}, Overlap Pressure: {overlap_pressure:.3f}, Bot Risk: {bot_risk:.3f}")
+        
+        return success
+
+    def test_audience_quality_formula_high_quality(self):
+        """Test formula: low overlap + no red_flags = high audience_quality"""
+        test_input = {
+            "account_id": "clean_account",
+            "x_score": 850,
+            "signal_noise": 8.0,
+            "consistency_0_1": 0.75,
+            "red_flags": [],  # No red flags
+            "overlap": {
+                "avg_jaccard": 0.03,  # Low overlap
+                "max_jaccard": 0.08,
+                "avg_shared": 8,
+                "max_shared": 20,
+                "sample_size": 10
+            }
+        }
+        
+        success, response = self.run_test(
+            "Formula Test - High Quality",
+            "POST",
+            "audience-quality",
+            200,
+            data=test_input
+        )
+        
+        if success:
+            data = response.get('data', {})
+            score = data.get('audience_quality_score_0_1', 0)
+            evidence = data.get('evidence', {})
+            purity = evidence.get('purity_0_1', 0)
+            
+            # Should have high purity and quality
+            if purity < 0.6:
+                self.log(f"❌ Expected high purity for clean account, got {purity:.3f}")
+                return False
+                
+            if score < 0.6:
+                self.log(f"❌ Expected high quality score for clean account, got {score:.3f}")
+                return False
+                
+            self.log(f"✅ Clean account formula correct - Score: {score:.3f}, Purity: {purity:.3f}")
+        
+        return success
+
+    def test_audience_quality_formula_low_quality(self):
+        """Test formula: high overlap + red_flags = low audience_quality"""
+        test_input = {
+            "account_id": "risky_account",
+            "x_score": 450,
+            "signal_noise": 3.5,
+            "consistency_0_1": 0.45,
+            "red_flags": ["AUDIENCE_OVERLAP", "BOT_LIKE_PATTERN", "FAKE_ENGAGEMENT"],
+            "overlap": {
+                "avg_jaccard": 0.20,  # High overlap
+                "max_jaccard": 0.35,
+                "avg_shared": 80,
+                "max_shared": 150,
+                "sample_size": 12
+            }
+        }
+        
+        success, response = self.run_test(
+            "Formula Test - Low Quality",
+            "POST",
+            "audience-quality",
+            200,
+            data=test_input
+        )
+        
+        if success:
+            data = response.get('data', {})
+            score = data.get('audience_quality_score_0_1', 0)
+            evidence = data.get('evidence', {})
+            purity = evidence.get('purity_0_1', 0)
+            
+            # Should have low purity and quality
+            if purity > 0.5:
+                self.log(f"❌ Expected low purity for risky account, got {purity:.3f}")
+                return False
+                
+            if score > 0.5:
+                self.log(f"❌ Expected low quality score for risky account, got {score:.3f}")
+                return False
+                
+            self.log(f"✅ Risky account formula correct - Score: {score:.3f}, Purity: {purity:.3f}")
+        
+        return success
+
+    def test_audience_quality_batch(self):
+        """Test POST /audience-quality/batch"""
+        test_inputs = [
+            {
+                "account_id": "batch_test_1",
+                "x_score": 650,
+                "signal_noise": 5.5,
+                "consistency_0_1": 0.60,
+                "red_flags": [],
+                "overlap": {"avg_jaccard": 0.05, "max_jaccard": 0.12, "avg_shared": 15, "max_shared": 35, "sample_size": 6}
+            },
+            {
+                "account_id": "batch_test_2",
+                "x_score": 520,
+                "signal_noise": 4.2,
+                "consistency_0_1": 0.50,
+                "red_flags": ["VIRAL_SPIKE"],
+                "overlap": {"avg_jaccard": 0.12, "max_jaccard": 0.22, "avg_shared": 40, "max_shared": 85, "sample_size": 8}
+            }
+        ]
+        
+        success, response = self.run_test(
+            "Audience Quality Batch",
+            "POST",
+            "audience-quality/batch",
+            200,
+            data={"items": test_inputs}
+        )
+        
+        if success:
+            data = response.get('data', {})
+            required_fields = ['version', 'computed_at', 'results', 'stats']
+            for field in required_fields:
+                if field not in data:
+                    self.log(f"❌ Missing batch result field: {field}")
+                    return False
+            
+            results = data.get('results', [])
+            if len(results) != len(test_inputs):
+                self.log(f"❌ Expected {len(test_inputs)} results, got {len(results)}")
+                return False
+                
+            # Validate stats
+            stats = data.get('stats', {})
+            if stats.get('total') != len(test_inputs):
+                self.log(f"❌ Stats total mismatch: {stats.get('total')} vs {len(test_inputs)}")
+                return False
+                
+            self.log(f"✅ Batch processed {len(results)} accounts successfully")
+        
+        return success
+
+    def test_audience_quality_config(self):
+        """Test GET /audience-quality/config"""
+        success, response = self.run_test(
+            "Audience Quality Config",
+            "GET",
+            "audience-quality/config",
+            200
+        )
+        
+        if success:
+            data = response.get('data', {})
+            required_fields = ['version', 'weights', 'overlap', 'botRisk', 'quality_thresholds']
+            for field in required_fields:
+                if field not in data:
+                    self.log(f"❌ Missing config field: {field}")
+                    return False
+            
+            # Validate weights sum to 1.0
+            weights = data.get('weights', {})
+            weights_sum = sum(weights.values())
+            if abs(weights_sum - 1.0) > 0.01:
+                self.log(f"❌ Weights don't sum to 1.0: {weights_sum}")
+                return False
+                
+            self.log("✅ Config structure is valid")
+        
+        return success
+
+    def test_admin_config_get(self):
+        """Test GET /api/admin/connections/audience-quality/config"""
+        url = f"{self.base_url}/api/admin/connections/audience-quality/config"
+        
+        self.tests_run += 1
+        self.log(f"🔍 Testing Admin Config Get...")
+        
+        try:
+            response = requests.get(url, headers={'Content-Type': 'application/json'}, timeout=30)
+            
+            success = response.status_code == 200
+            if success:
+                self.tests_passed += 1
+                self.log(f"✅ Passed - Status: {response.status_code}")
+                
+                data = response.json().get('data', {})
+                if 'version' not in data or 'config' not in data:
+                    self.log(f"❌ Missing admin config structure")
+                    return False
+                    
                 return True
             else:
-                self.failed_tests.append(f"{name}: Expected {expected_result}, got {result}")
-                self.log(f"❌ FAILED: {name} - Expected {expected_result}, got {result}", "ERROR")
+                self.log(f"❌ Failed - Status: {response.status_code}")
+                self.failed_tests.append({
+                    "name": "Admin Config Get",
+                    "endpoint": url,
+                    "expected": 200,
+                    "got": response.status_code,
+                    "response": response.text
+                })
                 return False
+
         except Exception as e:
-            self.failed_tests.append(f"{name}: Exception - {str(e)}")
-            self.log(f"❌ FAILED: {name} - Exception: {str(e)}", "ERROR")
+            self.log(f"❌ Failed - Error: {str(e)}")
+            self.failed_tests.append({
+                "name": "Admin Config Get",
+                "endpoint": url,
+                "error": str(e)
+            })
             return False
-    
-    def test_health_check(self) -> bool:
-        """Test /api/health endpoint"""
-        try:
-            response = self.session.get(f"{self.base_url}/api/health")
-            if response.status_code == 200:
-                data = response.json()
-                return data.get('ok') is True and 'service' in data
-            return False
-        except Exception as e:
-            self.log(f"Health check failed: {e}")
-            return False
-    
-    def test_connections_health(self) -> bool:
-        """Test /api/connections/health endpoint"""
-        try:
-            response = self.session.get(f"{self.base_url}/api/connections/health")
-            if response.status_code == 200:
-                data = response.json()
-                return data.get('ok') is True and data.get('module') == 'connections'
-            return False
-        except Exception as e:
-            self.log(f"Connections health check failed: {e}")
-            return False
-    
-    # ============================================================
-    # TWITTER SCORE API TESTS - Phase 1.1
-    # ============================================================
-    
-    def test_twitter_score_info_api(self) -> bool:
-        """Test GET /api/connections/twitter-score/info - should return version, weights, grades, penalties"""
-        try:
-            response = self.session.get(f"{self.base_url}/api/connections/twitter-score/info")
-            if response.status_code == 200:
-                data = response.json()
-                if data.get('ok') and 'data' in data:
-                    info_data = data['data']
-                    
-                    # Check required fields
-                    required_fields = ['version', 'weights', 'grades', 'penalties', 'components']
-                    has_required = all(field in info_data for field in required_fields)
-                    
-                    # Validate version
-                    version_ok = info_data.get('version') == '1.0.0'
-                    
-                    # Validate weights structure
-                    weights = info_data.get('weights', {})
-                    expected_weights = ['influence', 'quality', 'trend', 'network_proxy', 'consistency']
-                    has_weights = all(weight in weights for weight in expected_weights)
-                    
-                    # Check weight values (should sum to 1.0 based on config: 35%, 20%, 20%, 15%, 10%)
-                    weight_sum = sum(weights.values()) if has_weights else 0
-                    weight_sum_ok = abs(weight_sum - 1.0) < 0.01
-                    
-                    # Validate grades structure
-                    grades = info_data.get('grades', [])
-                    grade_names = [g.get('grade') for g in grades]
-                    has_all_grades = all(grade in grade_names for grade in ['S', 'A', 'B', 'C', 'D'])
-                    
-                    # Validate penalties structure
-                    penalties = info_data.get('penalties', {})
-                    penalties_ok = all(key in penalties for key in ['risk_levels', 'red_flags', 'max_penalty'])
-                    
-                    self.log(f"Twitter Score Info: version={info_data.get('version')}, weights_sum={weight_sum:.2f}, grades={len(grades)}")
-                    return has_required and version_ok and has_weights and weight_sum_ok and has_all_grades and penalties_ok
-            return False
-        except Exception as e:
-            self.log(f"Twitter Score Info API test failed: {e}")
-            return False
-    
-    def test_twitter_score_mock_api(self) -> bool:
-        """Test GET /api/connections/twitter-score/mock - should return examples with different grades"""
-        try:
-            response = self.session.get(f"{self.base_url}/api/connections/twitter-score/mock")
-            if response.status_code == 200:
-                data = response.json()
-                if data.get('ok') and 'data' in data:
-                    mock_data = data['data']
-                    
-                    # Check for required structure
-                    required_fields = ['version', 'description', 'results', 'grade_distribution']
-                    has_required = all(field in mock_data for field in required_fields)
-                    
-                    results = mock_data.get('results', [])
-                    results_ok = len(results) >= 3  # Should have multiple examples
-                    
-                    if results_ok and len(results) > 0:
-                        first_result = results[0]
-                        # Check result structure
-                        result_fields = ['account_id', 'twitter_score_1000', 'grade', 'confidence', 'components', 'explain']
-                        has_result_structure = all(field in first_result for field in result_fields)
-                        
-                        # Check score range (0-1000)
-                        score = first_result.get('twitter_score_1000', -1)
-                        score_ok = 0 <= score <= 1000
-                        
-                        # Check grade values
-                        grade = first_result.get('grade')
-                        grade_ok = grade in ['S', 'A', 'B', 'C', 'D']
-                        
-                        # Check confidence levels
-                        confidence = first_result.get('confidence')
-                        confidence_ok = confidence in ['LOW', 'MED', 'HIGH']
-                        
-                        # Check explain structure
-                        explain = first_result.get('explain', {})
-                        explain_fields = ['summary', 'drivers', 'concerns', 'recommendations']
-                        has_explain = all(field in explain for field in explain_fields)
-                        
-                        # Check grade distribution
-                        grade_dist = mock_data.get('grade_distribution', {})
-                        has_grade_dist = all(grade in grade_dist for grade in ['S', 'A', 'B', 'C', 'D'])
-                        
-                        grades_found = [r.get('grade') for r in results]
-                        unique_grades = len(set(grades_found))
-                        
-                        self.log(f"Twitter Score Mock: {len(results)} results, {unique_grades} unique grades, scores range from {min(r.get('twitter_score_1000', 0) for r in results)} to {max(r.get('twitter_score_1000', 0) for r in results)}")
-                        
-                        return (has_required and results_ok and has_result_structure and 
-                               score_ok and grade_ok and confidence_ok and has_explain and has_grade_dist)
-                    
-                    return has_required
-            return False
-        except Exception as e:
-            self.log(f"Twitter Score Mock API test failed: {e}")
-            return False
-    
-    def test_twitter_score_compute_api(self) -> bool:
-        """Test POST /api/connections/twitter-score - compute score with base_influence, velocity, red_flags"""
-        try:
-            # Test high influence + low risk = high score scenario
-            high_quality_input = {
-                "account_id": "test_high_quality_001",
-                "base_influence": 850,
-                "x_score": 780,
-                "signal_noise": 8.5,
-                "velocity": 15,
-                "acceleration": 5,
-                "risk_level": "LOW",
-                "red_flags": [],
-                "early_signal_badge": "rising",
-                "early_signal_score": 75
+
+    def test_admin_config_patch(self):
+        """Test PATCH /api/admin/connections/audience-quality/config"""
+        url = f"{self.base_url}/api/admin/connections/audience-quality/config"
+        
+        # Test with valid weight update
+        patch_data = {
+            "weights": {
+                "purity": 0.50,
+                "smart_followers_proxy": 0.25,
+                "signal_quality": 0.15,
+                "consistency": 0.10
             }
-            
-            response = self.session.post(
-                f"{self.base_url}/api/connections/twitter-score",
-                json=high_quality_input,
-                headers={'Content-Type': 'application/json'}
-            )
-            
-            if response.status_code == 200:
-                data = response.json()
-                if data.get('ok') and 'data' in data:
-                    result = data['data']
-                    
-                    # Check result structure
-                    required_fields = ['account_id', 'twitter_score_1000', 'grade', 'confidence', 'components', 'debug', 'explain', 'meta']
-                    has_structure = all(field in result for field in required_fields)
-                    
-                    # Validate high quality input produces good score
-                    score = result.get('twitter_score_1000', 0)
-                    grade = result.get('grade')
-                    confidence = result.get('confidence')
-                    
-                    # High influence + low risk should give good score (A or S grade)
-                    good_score = score >= 700  # A grade threshold
-                    good_grade = grade in ['A', 'S']
-                    
-                    # Check components structure
-                    components = result.get('components', {})
-                    component_fields = ['influence', 'quality', 'trend', 'network_proxy', 'consistency', 'risk_penalty']
-                    has_components = all(field in components for field in component_fields)
-                    
-                    # Components should be 0-1 range
-                    components_valid = all(0 <= components.get(field, -1) <= 1 for field in component_fields)
-                    
-                    # Check debug info
-                    debug = result.get('debug', {})
-                    debug_fields = ['weighted_sum_0_1', 'weights', 'penalties']
-                    has_debug = all(field in debug for field in debug_fields)
-                    
-                    # Check explain structure
-                    explain = result.get('explain', {})
-                    explain_fields = ['summary', 'drivers', 'concerns', 'recommendations']
-                    has_explain = all(field in explain for field in explain_fields)
-                    
-                    # Drivers should be populated for high-quality account
-                    has_drivers = len(explain.get('drivers', [])) > 0
-                    
-                    self.log(f"Twitter Score Compute (high quality): score={score}, grade={grade}, confidence={confidence}, drivers={len(explain.get('drivers', []))}")
-                    
-                    return (has_structure and good_score and good_grade and has_components and 
-                           components_valid and has_debug and has_explain and has_drivers)
-            return False
-        except Exception as e:
-            self.log(f"Twitter Score Compute API test failed: {e}")
-            return False
-    
-    def test_twitter_score_compute_low_quality(self) -> bool:
-        """Test POST /api/connections/twitter-score with high red_flags + HIGH risk = low score (Grade D/C)"""
+        }
+        
+        self.tests_run += 1
+        self.log(f"🔍 Testing Admin Config Patch...")
+        
         try:
-            # Test high risk + red flags = low score scenario
-            low_quality_input = {
-                "account_id": "test_low_quality_002",
-                "base_influence": 420,
-                "x_score": 280,
-                "signal_noise": 2.5,
-                "velocity": 3,
-                "acceleration": -5,
-                "risk_level": "HIGH",
-                "red_flags": ["REPOST_FARM", "BOT_LIKE_PATTERN", "FAKE_ENGAGEMENT"],
-                "early_signal_badge": "none",
-                "early_signal_score": 15
-            }
+            response = requests.patch(url, json=patch_data, headers={'Content-Type': 'application/json'}, timeout=30)
             
-            response = self.session.post(
-                f"{self.base_url}/api/connections/twitter-score",
-                json=low_quality_input,
-                headers={'Content-Type': 'application/json'}
-            )
-            
-            if response.status_code == 200:
-                data = response.json()
-                if data.get('ok') and 'data' in data:
-                    result = data['data']
-                    
-                    score = result.get('twitter_score_1000', 1000)
-                    grade = result.get('grade')
-                    
-                    # High risk + red flags should give low score (C or D grade)
-                    low_score = score <= 550  # Below B grade threshold  
-                    low_grade = grade in ['C', 'D']
-                    
-                    # Check that concerns are populated for risky account
-                    explain = result.get('explain', {})
-                    has_concerns = len(explain.get('concerns', [])) > 0
-                    
-                    # Check that penalties are applied
-                    debug = result.get('debug', {})
-                    penalties = debug.get('penalties', {})
-                    has_penalties = penalties.get('red_flags_penalty', 0) > 0 or penalties.get('risk_penalty', 0) > 0
-                    
-                    self.log(f"Twitter Score Compute (low quality): score={score}, grade={grade}, concerns={len(explain.get('concerns', []))}, penalties={penalties}")
-                    
-                    return low_score and low_grade and has_concerns and has_penalties
-            return False
-        except Exception as e:
-            self.log(f"Twitter Score Compute Low Quality test failed: {e}")
-            return False
-    
-    def test_twitter_score_batch_api(self) -> bool:
-        """Test POST /api/connections/twitter-score/batch - batch compute for multiple accounts"""
-        try:
-            # Test batch with multiple different quality accounts
-            batch_input = {
-                "accounts": [
-                    {
-                        "account_id": "batch_whale_001",
-                        "base_influence": 920,
-                        "x_score": 820,
-                        "signal_noise": 8.0,
-                        "velocity": 12,
-                        "acceleration": 3,
-                        "risk_level": "LOW",
-                        "red_flags": [],
-                        "early_signal_badge": "breakout"
-                    },
-                    {
-                        "account_id": "batch_retail_002",
-                        "base_influence": 350,
-                        "x_score": 450,
-                        "signal_noise": 6.0,
-                        "velocity": 8,
-                        "acceleration": 2,
-                        "risk_level": "MED",
-                        "red_flags": ["VIRAL_SPIKE"],
-                        "early_signal_badge": "rising"
-                    },
-                    {
-                        "account_id": "batch_farm_003",
-                        "base_influence": 580,
-                        "x_score": 200,
-                        "signal_noise": 1.5,
-                        "velocity": -2,
-                        "acceleration": -8,
-                        "risk_level": "HIGH",
-                        "red_flags": ["REPOST_FARM", "BOT_LIKE_PATTERN"],
-                        "early_signal_badge": "none"
-                    }
-                ]
-            }
-            
-            response = self.session.post(
-                f"{self.base_url}/api/connections/twitter-score/batch",
-                json=batch_input,
-                headers={'Content-Type': 'application/json'}
-            )
-            
-            if response.status_code == 200:
-                data = response.json()
-                if data.get('ok') and 'data' in data:
-                    batch_result = data['data']
-                    
-                    # Check batch result structure
-                    required_fields = ['version', 'computed_at', 'results', 'stats']
-                    has_structure = all(field in batch_result for field in required_fields)
-                    
-                    results = batch_result.get('results', [])
-                    correct_count = len(results) == 3
-                    
-                    # Check stats structure
-                    stats = batch_result.get('stats', {})
-                    stats_fields = ['total', 'by_grade', 'avg_score']
-                    has_stats = all(field in stats for field in stats_fields)
-                    
-                    # Verify different grades produced
-                    if correct_count and len(results) > 0:
-                        grades = [r.get('grade') for r in results]
-                        scores = [r.get('twitter_score_1000') for r in results]
-                        
-                        # Should have variety in scores/grades
-                        unique_grades = len(set(grades))
-                        score_range = max(scores) - min(scores) if scores else 0
-                        
-                        # Check by_grade stats match results
-                        by_grade = stats.get('by_grade', {})
-                        grade_stats_match = sum(by_grade.values()) == len(results)
-                        
-                        self.log(f"Twitter Score Batch: {len(results)} results, {unique_grades} unique grades, score range {score_range}, avg={stats.get('avg_score')}")
-                        
-                        return (has_structure and correct_count and has_stats and 
-                               unique_grades >= 2 and score_range >= 100 and grade_stats_match)
-                    
-                    return has_structure and correct_count and has_stats
-            return False
-        except Exception as e:
-            self.log(f"Twitter Score Batch API test failed: {e}")
-            return False
-    
-    def test_twitter_score_config_api(self) -> bool:
-        """Test GET /api/connections/twitter-score/config - current configuration"""
-        try:
-            response = self.session.get(f"{self.base_url}/api/connections/twitter-score/config")
-            if response.status_code == 200:
-                data = response.json()
-                if data.get('ok') and 'data' in data:
-                    config_data = data['data']
-                    
-                    # Check config structure
-                    required_fields = ['version', 'weights', 'normalize', 'trend', 'proxies', 'penalties', 'grades', 'confidence']
-                    has_structure = all(field in config_data for field in required_fields)
-                    
-                    # Validate version
-                    version_ok = config_data.get('version') == '1.0.0'
-                    
-                    # Validate weights (should sum to 1.0)
-                    weights = config_data.get('weights', {})
-                    expected_weights = ['influence', 'quality', 'trend', 'network_proxy', 'consistency']
-                    has_all_weights = all(weight in weights for weight in expected_weights)
-                    
-                    # Check weight values based on config (35%, 20%, 20%, 15%, 10%)
-                    if has_all_weights:
-                        influence_weight = weights.get('influence') == 0.35
-                        quality_weight = weights.get('quality') == 0.20
-                        trend_weight = weights.get('trend') == 0.20
-                        network_weight = weights.get('network_proxy') == 0.15
-                        consistency_weight = weights.get('consistency') == 0.10
-                        weights_correct = all([influence_weight, quality_weight, trend_weight, network_weight, consistency_weight])
-                    else:
-                        weights_correct = False
-                    
-                    # Validate grades thresholds
-                    grades = config_data.get('grades', [])
-                    if len(grades) >= 5:
-                        # Check S >= 850, A >= 700, B >= 550, C >= 400, D >= 0
-                        grades_by_name = {g['grade']: g['min'] for g in grades}
-                        thresholds_correct = (
-                            grades_by_name.get('S', 0) >= 850 and
-                            grades_by_name.get('A', 0) >= 700 and
-                            grades_by_name.get('B', 0) >= 550 and
-                            grades_by_name.get('C', 0) >= 400 and
-                            grades_by_name.get('D', -1) >= 0
-                        )
-                    else:
-                        thresholds_correct = False
-                    
-                    # Validate penalties structure
-                    penalties = config_data.get('penalties', {})
-                    penalty_fields = ['risk_level', 'red_flags', 'max_total_penalty']
-                    has_penalties = all(field in penalties for field in penalty_fields)
-                    
-                    # Check proxies (mocked APIs)
-                    proxies = config_data.get('proxies', {})
-                    proxy_fields = ['network_from_early_signal', 'consistency_default']
-                    has_proxies = all(field in proxies for field in proxy_fields)
-                    
-                    # Validate consistency default (should be 0.55 per requirement)
-                    consistency_proxy = proxies.get('consistency_default') == 0.55
-                    
-                    self.log(f"Twitter Score Config: version={config_data.get('version')}, weights_correct={weights_correct}, thresholds_correct={thresholds_correct}, consistency_proxy={consistency_proxy}")
-                    
-                    return (has_structure and version_ok and has_all_weights and weights_correct and 
-                           thresholds_correct and has_penalties and has_proxies and consistency_proxy)
-            return False
-        except Exception as e:
-            self.log(f"Twitter Score Config API test failed: {e}")
-            return False
-    
-    def test_twitter_score_validation_errors(self) -> bool:
-        """Test validation errors for invalid inputs"""
-        try:
-            # Test missing account_id
-            invalid_input = {
-                "base_influence": 500,
-                "x_score": 400
-            }
-            
-            response = self.session.post(
-                f"{self.base_url}/api/connections/twitter-score",
-                json=invalid_input,
-                headers={'Content-Type': 'application/json'}
-            )
-            
-            if response.status_code == 400:
-                data = response.json()
-                has_error = not data.get('ok') and 'error' in data
-                error_mentions_account_id = 'account_id' in data.get('error', '').lower()
+            success = response.status_code == 200
+            if success:
+                self.tests_passed += 1
+                self.log(f"✅ Passed - Status: {response.status_code}")
                 
-                self.log(f"Twitter Score Validation: properly rejects missing account_id")
-                return has_error and error_mentions_account_id
-            return False
+                data = response.json().get('data', {})
+                if 'config' not in data:
+                    self.log(f"❌ Missing updated config in response")
+                    return False
+                    
+                # Verify weights were updated
+                updated_weights = data['config'].get('weights', {})
+                if updated_weights.get('purity') != 0.50:
+                    self.log(f"❌ Weight not updated correctly")
+                    return False
+                    
+                return True
+            else:
+                self.log(f"❌ Failed - Status: {response.status_code}")
+                self.failed_tests.append({
+                    "name": "Admin Config Patch",
+                    "endpoint": url,
+                    "expected": 200,
+                    "got": response.status_code,
+                    "response": response.text
+                })
+                return False
+
         except Exception as e:
-            self.log(f"Twitter Score Validation test failed: {e}")
+            self.log(f"❌ Failed - Error: {str(e)}")
+            self.failed_tests.append({
+                "name": "Admin Config Patch",
+                "endpoint": url,
+                "error": str(e)
+            })
             return False
-    
-    def test_batch_validation_errors(self) -> bool:
-        """Test batch validation errors"""
-        try:
-            # Test empty accounts array
-            invalid_batch = {
-                "accounts": []
-            }
+
+    def test_twitter_score_integration(self):
+        """Test Twitter Score integration with audience_quality_score_0_1"""
+        # First get a mock audience quality result
+        success, aq_response = self.run_test(
+            "Get Audience Quality for Twitter Score",
+            "GET",
+            "audience-quality/mock",
+            200
+        )
+        
+        if not success:
+            return False
             
-            response = self.session.post(
-                f"{self.base_url}/api/connections/twitter-score/batch",
-                json=invalid_batch,
-                headers={'Content-Type': 'application/json'}
-            )
+        # Get a sample result
+        results = aq_response.get('data', {}).get('results', [])
+        if not results:
+            self.log("❌ No audience quality results to test integration")
+            return False
             
-            if response.status_code == 400:
-                data = response.json()
-                has_error = not data.get('ok') and 'error' in data
+        sample_result = results[0]
+        audience_quality_score = sample_result.get('audience_quality_score_0_1')
+        
+        # Test Twitter Score with audience quality
+        twitter_score_input = {
+            "account_id": "integration_test_001",
+            "base_influence": 650,
+            "x_score": 750,
+            "signal_noise": 6.5,
+            "velocity": 0.35,
+            "acceleration": 0.25,
+            "risk_level": "low",
+            "red_flags": [],
+            "early_signal_badge": "rising",
+            "audience_quality_score_0_1": audience_quality_score  # This should replace network_proxy
+        }
+        
+        success, ts_response = self.run_test(
+            "Twitter Score with Audience Quality",
+            "POST",
+            "twitter-score",
+            200,
+            data=twitter_score_input
+        )
+        
+        if success:
+            data = ts_response.get('data', {})
+            components = data.get('components', {})
+            network_proxy = components.get('network_proxy')
+            
+            # Verify audience quality is used as network proxy
+            if abs(network_proxy - audience_quality_score) > 0.01:
+                self.log(f"❌ Audience quality not used as network proxy. Expected: {audience_quality_score:.3f}, Got: {network_proxy:.3f}")
+                return False
                 
-                self.log(f"Twitter Score Batch Validation: properly rejects empty accounts")
-                return has_error
-            return False
-        except Exception as e:
-            self.log(f"Twitter Score Batch Validation test failed: {e}")
-            return False
-    
-    def test_score_formula_verification(self) -> bool:
-        """Test that score formula works as documented: high influence + low risk = high score"""
-        try:
-            # Create specific test case to verify formula
-            formula_test_input = {
-                "account_id": "formula_test_001",
-                "base_influence": 900,  # High influence
-                "x_score": 800,        # High quality
-                "signal_noise": 9,     # High signal/noise
-                "velocity": 20,        # Good growth
-                "acceleration": 8,     # Good acceleration
-                "risk_level": "LOW",   # Low risk
-                "red_flags": [],       # No red flags
-                "early_signal_badge": "breakout",
-                "early_signal_score": 85
-            }
-            
-            response = self.session.post(
-                f"{self.base_url}/api/connections/twitter-score",
-                json=formula_test_input,
-                headers={'Content-Type': 'application/json'}
-            )
-            
-            if response.status_code == 200:
-                data = response.json()
-                if data.get('ok') and 'data' in data:
-                    result = data['data']
-                    
-                    score = result.get('twitter_score_1000', 0)
-                    grade = result.get('grade')
-                    components = result.get('components', {})
-                    debug = result.get('debug', {})
-                    
-                    # Verify high influence translates to high component score
-                    influence_component = components.get('influence', 0)
-                    influence_good = influence_component >= 0.8  # Should be high due to base_influence=900
-                    
-                    # Verify quality component
-                    quality_component = components.get('quality', 0)
-                    quality_good = quality_component >= 0.7   # Should be high due to x_score=800 + signal_noise=9
-                    
-                    # Verify trend component
-                    trend_component = components.get('trend', 0)
-                    trend_good = trend_component >= 0.6       # Should be good due to positive velocity/acceleration
-                    
-                    # Verify low risk penalty
-                    risk_penalty = components.get('risk_penalty', 1)
-                    low_risk = risk_penalty <= 0.15          # Should be low due to LOW risk + no red flags
-                    
-                    # Overall score should be high (A or S grade)
-                    high_score = score >= 700 and grade in ['A', 'S']
-                    
-                    # Verify weighted sum makes sense
-                    weighted_sum = debug.get('weighted_sum_0_1', 0)
-                    weighted_sum_reasonable = 0.7 <= weighted_sum <= 1.0
-                    
-                    self.log(f"Formula Test: score={score}, grade={grade}, influence={influence_component:.2f}, quality={quality_component:.2f}, trend={trend_component:.2f}, risk_penalty={risk_penalty:.2f}")
-                    
-                    return (influence_good and quality_good and trend_good and low_risk and 
-                           high_score and weighted_sum_reasonable)
-            return False
-        except Exception as e:
-            self.log(f"Score Formula Verification test failed: {e}")
-            return False
-    
-    def run_all_tests(self) -> Dict[str, Any]:
-        """Run all Twitter Score API tests and return results"""
-        self.log("🚀 Starting Twitter Score v1.0 Backend Testing")
+            # Check data sources mention audience_quality
+            meta = data.get('meta', {})
+            data_sources = meta.get('data_sources', [])
+            if 'audience_quality' not in data_sources:
+                self.log(f"⚠️  audience_quality not listed in data sources: {data_sources}")
+                
+            self.log(f"✅ Integration working - Audience quality {audience_quality_score:.3f} used as network proxy {network_proxy:.3f}")
+        
+        return success
+
+    def run_all_tests(self):
+        """Run all audience quality tests"""
+        self.log("🚀 Starting Audience Quality Engine Tests...")
         self.log(f"Testing against: {self.base_url}")
         
-        # Core API Health Tests
-        self.run_test("Backend health /api/health", self.test_health_check)
-        self.run_test("Connections module health /api/connections/health", self.test_connections_health)
+        # Test all endpoints
+        tests = [
+            ("Info Endpoint", self.test_audience_quality_info),
+            ("Mock Data Endpoint", self.test_audience_quality_mock),
+            ("Compute Endpoint", self.test_audience_quality_compute),
+            ("Formula High Quality", self.test_audience_quality_formula_high_quality),
+            ("Formula Low Quality", self.test_audience_quality_formula_low_quality),
+            ("Batch Endpoint", self.test_audience_quality_batch),
+            ("Config Endpoint", self.test_audience_quality_config),
+            ("Admin Config Get", self.test_admin_config_get),
+            ("Admin Config Patch", self.test_admin_config_patch),
+            ("Twitter Score Integration", self.test_twitter_score_integration),
+        ]
         
-        # Twitter Score API Tests - Phase 1.1
-        self.run_test("Twitter Score Info API /api/connections/twitter-score/info", self.test_twitter_score_info_api)
-        self.run_test("Twitter Score Mock API /api/connections/twitter-score/mock", self.test_twitter_score_mock_api)
-        self.run_test("Twitter Score Config API /api/connections/twitter-score/config", self.test_twitter_score_config_api)
+        passed_tests = []
+        failed_tests = []
         
-        # Core Compute Functionality
-        self.run_test("Twitter Score Compute API (high quality) /api/connections/twitter-score", self.test_twitter_score_compute_api)
-        self.run_test("Twitter Score Compute API (low quality) - high red_flags + HIGH risk = low score", self.test_twitter_score_compute_low_quality)
-        self.run_test("Twitter Score Batch API /api/connections/twitter-score/batch", self.test_twitter_score_batch_api)
+        for test_name, test_func in tests:
+            self.log(f"\n--- {test_name} ---")
+            try:
+                if test_func():
+                    passed_tests.append(test_name)
+                else:
+                    failed_tests.append(test_name)
+            except Exception as e:
+                self.log(f"❌ Test {test_name} crashed: {str(e)}")
+                failed_tests.append(f"{test_name} (crashed)")
         
-        # Formula & Logic Tests
-        self.run_test("Score Formula Verification - high influence + low risk = high score", self.test_score_formula_verification)
+        # Summary
+        self.log(f"\n{'='*50}")
+        self.log(f"📊 AUDIENCE QUALITY ENGINE TEST SUMMARY")
+        self.log(f"{'='*50}")
+        self.log(f"Tests run: {self.tests_run}")
+        self.log(f"Tests passed: {self.tests_passed}")
+        self.log(f"Tests failed: {len(self.failed_tests)}")
+        self.log(f"Success rate: {(self.tests_passed/max(self.tests_run, 1)*100):.1f}%")
         
-        # Validation Tests
-        self.run_test("Twitter Score Input Validation", self.test_twitter_score_validation_errors)
-        self.run_test("Twitter Score Batch Validation", self.test_batch_validation_errors)
+        if passed_tests:
+            self.log(f"\n✅ PASSED TESTS:")
+            for test in passed_tests:
+                self.log(f"  - {test}")
         
-        # Results Summary
-        success_rate = (self.tests_passed / self.tests_run * 100) if self.tests_run > 0 else 0
-        
-        self.log(f"\n📊 Twitter Score v1.0 Backend Test Results:")
-        self.log(f"✅ Passed: {self.tests_passed}/{self.tests_run} ({success_rate:.1f}%)")
+        if failed_tests:
+            self.log(f"\n❌ FAILED TESTS:")
+            for test in failed_tests:
+                self.log(f"  - {test}")
         
         if self.failed_tests:
-            self.log(f"❌ Failed Tests:")
+            self.log(f"\n🔍 FAILURE DETAILS:")
             for failure in self.failed_tests:
-                self.log(f"   - {failure}")
+                self.log(f"  - {failure.get('name', 'Unknown')}: {failure.get('error', failure.get('response', 'Unknown error'))}")
         
         return {
-            'tests_run': self.tests_run,
-            'tests_passed': self.tests_passed,
-            'success_rate': success_rate,
-            'failed_tests': self.failed_tests
+            "total_tests": self.tests_run,
+            "passed_tests": passed_tests,
+            "failed_tests": failed_tests,
+            "success_rate": (self.tests_passed/max(self.tests_run, 1)*100),
+            "failures": self.failed_tests
         }
 
 def main():
-    """Main test execution"""
-    tester = TwitterScoreTester()
+    """Main test runner"""
+    print("🔬 Audience Quality Engine v1.0 Test Suite")
+    print("=" * 50)
+    
+    tester = AudienceQualityTester()
     results = tester.run_all_tests()
     
-    # Exit with appropriate code
-    if results['success_rate'] >= 80:
-        print(f"\n🎉 Twitter Score v1.0 Backend tests PASSED with {results['success_rate']:.1f}% success rate")
-        return 0
+    # Return appropriate exit code
+    if results["success_rate"] < 50:
+        return 1  # Major failure
+    elif results["failed_tests"]:
+        return 1  # Some failures  
     else:
-        print(f"\n💥 Twitter Score v1.0 Backend tests FAILED with {results['success_rate']:.1f}% success rate")
-        return 1
+        return 0  # All passed
 
 if __name__ == "__main__":
     sys.exit(main())
