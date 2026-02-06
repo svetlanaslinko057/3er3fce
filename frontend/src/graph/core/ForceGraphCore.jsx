@@ -67,12 +67,37 @@ function ForceGraphCore({
     
     const fg = fgRef.current;
     
-    // Настройки сил (как в референсе Arkham) — БОЛЕЕ РАЗДВИНУТЫЙ ГРАФ
-    fg.d3Force('charge')?.strength(-200);      // Сильнее отталкивание
-    fg.d3Force('link')?.distance(120);         // Больше расстояние
-    fg.d3Force('center')?.strength(0.15);      // Слабее притяжение к центру
-    fg.d3VelocityDecay?.(0.3);                 // Умеренное затухание
+    // Настройки сил — СТАТИЧНЫЙ ГРАФ после стабилизации
+    fg.d3Force('charge')?.strength(-200);      // Отталкивание
+    fg.d3Force('link')?.distance(120);         // Расстояние между нодами
+    fg.d3Force('center')?.strength(0.15);      // Притяжение к центру
+    fg.d3VelocityDecay?.(0.4);                 // Быстрое затухание
     
+    // STOP simulation after initial layout (static graph)
+    const stopTimer = setTimeout(() => {
+      try {
+        // Pause simulation - graph becomes static
+        fg.pauseAnimation?.();
+        
+        // Fix all node positions
+        if (fg.graphData) {
+          const graphData = fg.graphData();
+          graphData.nodes?.forEach(node => {
+            node.fx = node.x;
+            node.fy = node.y;
+          });
+        }
+        
+        // Resume rendering but not physics
+        fg.resumeAnimation?.();
+        
+        console.log('[Graph] Simulation stopped - static mode');
+      } catch (e) {
+        // ignore
+      }
+    }, 2000); // Wait 2s for initial layout to stabilize
+    
+    return () => clearTimeout(stopTimer);
   }, [data]);
   
   // ============ NODE DRAG ============
