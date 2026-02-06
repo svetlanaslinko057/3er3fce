@@ -1,127 +1,83 @@
 # Connections Module - PRD
 
-## Оригинальное требование
-Развернуть проект Connections Module с GitHub (https://github.com/svetlanaslinko057/555768), следуя инструкциям репозитория. Изолированный модуль для справедливого рейтинга инфлюенсеров.
+## Original Problem Statement
+Развернуть проект Connections Module с GitHub (https://github.com/svetlanaslinko057/e5e5e5e) - изолированный модуль платформы для формирования справедливого рейтинга инфлюенсеров в социальных сетях (Twitter и др.).
 
-## Архитектура
-
-### Технологический стек
-- **Backend**: Node.js 20+ (Fastify/TypeScript) + Python FastAPI proxy
-- **Frontend**: React 19 + Tailwind CSS
-- **Database**: MongoDB 6.0+
-- **Порты**: FastAPI (8001), Fastify (8003), Frontend (3000)
-
-### Структура
+## Architecture
 ```
 /app/
 ├── backend/
-│   ├── src/
-│   │   ├── server-minimal.ts      # Entry point
-│   │   ├── app-minimal.ts         # App config
-│   │   └── modules/connections/   # Connections Module
-│   └── server.py                  # FastAPI proxy
+│   ├── server.py                   # Python FastAPI proxy (port 8001)
+│   └── src/
+│       ├── server-minimal.ts       # Node.js Fastify (port 8003)
+│       └── modules/connections/    # Connections Module
 ├── frontend/
 │   └── src/
-│       ├── pages/
-│       │   ├── ConnectionsPage.jsx
-│       │   ├── ConnectionsEarlySignalPage.jsx
-│       │   └── admin/AdminConnectionsPage.jsx
-│       └── components/connections/
-└── docs/
-    ├── CONCEPT.md
-    ├── CONNECTIONS_MODULE.md
-    └── QUICK_START.md
+│       └── pages/                  # React pages (port 3000)
+└── docs/                           # Documentation
 ```
 
-## Персоны пользователей
-1. **Трейдеры/Инвесторы** — поиск "восходящих звёзд" до массового внимания
-2. **Маркетологи** — выбор инфлюенсеров с реальной аудиторией
-3. **Аналитики** — мониторинг динамики влияния
+## User Personas
+1. **Analyst** - использует Connections для анализа инфлюенсеров
+2. **Admin** - управляет настройками через Admin Panel
 
-## Основные функции
+## Core Requirements (Static)
+- [x] Influence Scoring - quality-adjusted score
+- [x] Trend Analysis - velocity + acceleration
+- [x] Early Signal Detection - breakout/rising signals
+- [x] Risk Detection - накрутка/боты
+- [x] Admin Panel - авторизация, управление
+- [x] Mock Mode - работа без внешних API
 
-### ✅ Реализовано
-- **Influence Scoring** — качество влияния (Base + Adjusted)
-- **Trend Analysis** — Velocity + Acceleration метрики
-- **Early Signal Detection** — Breakout/Rising детекция
-- **Risk Detection** — Уровни риска (low/medium/high)
-- **Alerts Engine** — Генерация алертов (preview режим)
-- **Admin Control Plane** — Управление модулем
-- **Mock Mode** — Работа без Twitter API
+## What's Been Implemented
+- **2026-02-06**: Initial deployment from GitHub
+  - Cloned repository
+  - Configured .env files (MongoDB, Telegram token)
+  - Installed dependencies (yarn)
+  - Backend: Node.js Fastify + Python proxy running
+  - Frontend: React app running
+  - Added 3 test accounts (crypto_whale, alpha_hunter, defi_expert)
+  - All API endpoints tested (18/18 passing)
+  - Frontend pages verified (Connections, Radar, Admin)
 
-### Режимы работы
-- **Mock** (текущий) — тестовые данные
-- **Sandbox** — ограниченные реальные данные
-- **Twitter Live** — полные данные (требует API keys)
+## Prioritized Backlog
+### P0 (Critical) - Done
+- [x] Backend deployment
+- [x] Frontend deployment  
+- [x] MongoDB connection
+- [x] Admin authentication
 
-## Что реализовано (2026-02-06)
+### P1 (High Priority) - Pending
+- [ ] Twitter API integration (live data)
+- [ ] Alert delivery (Telegram/Discord)
 
-### P0 - Backend Core (ЗАВЕРШЁН ✅)
-- [x] FastAPI proxy → Node.js Fastify
-- [x] Connections Module API endpoints
-- [x] Admin authentication (JWT)
-- [x] MongoDB подключение
-- [x] Mock data generation
+### P2 (Medium Priority) - Backlog
+- [ ] ML-enhanced scoring
+- [ ] Reddit Module
+- [ ] News Module
 
-### P1 - Graph как Продукт (ЗАВЕРШЁН ✅)
-- [x] **Filter Modal** (schema-driven) — фильтрация по profile, early signal, risk level
-- [x] **Suggestions Panel** ("Explore Suggestions") — 5 рекомендаций с причинами
-- [x] **Node Details Panel** — клик по ноде → влияние, сигнал, связи
-- [x] **Compare из графа** — кнопка "Compare with..." → выбор второго аккаунта → сравнение
-- [x] **Ranking Table** — Top 10 инфлюенсеров, синхронизация с графом
-- [x] **Навигация** — Influencers | Graph | Radar табы
-
-### Frontend Pages
-- [x] `/connections` — список инфлюенсеров
-- [x] `/connections/graph` — Force Graph визуализация с фильтрами
-- [x] `/connections/radar` — Early Signal визуализация
-- [x] `/admin/connections` — Admin Control Plane
-
-### API Endpoints
-- `GET /api/connections/health`
-- `GET /api/connections/accounts`
-- `POST /api/connections/score`
-- `POST /api/connections/early-signal`
-- `GET /api/admin/connections/overview`
-
-## Приоритеты (Backlog)
-
-### P0 - Backend Core — ✅ ЗАВЕРШЁН
-
-### P1 - Graph как Продукт — ✅ ЗАВЕРШЁН
-
-### P2.1 - Telegram Delivery (ЗАВЕРШЁН ✅)
-- [x] Telegram Bot (@t_fomo_bot) подключен
-- [x] Admin UI для управления доставкой
-- [x] Типы алертов: Early Breakout, Strong Acceleration, Trend Reversal
-- [x] Cooldown настройки (24h/12h)
-- [x] Test Message / Dispatch Pending функции
-- [x] History и Stats API
-
-### P2.2 - Share / Persist Graph State (ЗАВЕРШЁН ✅)
-- [x] Backend API: encode/decode state (base64-url-safe)
-- [x] Frontend: state restore from URL (?state=...)
-- [x] Share Button с копированием URL
-- [x] Telegram → Open in Graph ссылки
-- [x] Version control (GraphState v1.0)
-
-### P2 - Интеграции
-- [ ] Twitter API интеграция (переключение Mock → Twitter Live)
-- [ ] Telegram Delivery для алертов
-- [ ] Discord Webhooks
-
-### P3 - Аналитика
-- [ ] Historical Data Storage
-- [ ] ML-enhanced Scoring
-- [ ] Prediction Models
-
-### P4 - Расширение
-- [ ] Cross-platform (Reddit, Telegram channels)
-- [ ] Export/Share функциональность
+## API Endpoints
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| /api/health | GET | System health |
+| /api/connections/health | GET | Module health |
+| /api/connections/accounts | GET | List accounts |
+| /api/connections/score | POST | Calculate score |
+| /api/connections/trends | POST | Trend analysis |
+| /api/connections/early-signal | POST | Early signals |
+| /api/admin/auth/login | POST | Admin login |
+| /api/admin/connections/overview | GET | Admin overview |
 
 ## Credentials
-- **Admin**: admin / admin12345
+- Admin: `admin` / `admin12345`
+- Telegram Bot Token: Configured in .env
 
-## Ссылки
-- Документация: /app/docs/
-- GitHub: https://github.com/svetlanaslinko057/555768
+## URLs
+- Connections: http://localhost:3000/connections
+- Radar: http://localhost:3000/connections/radar
+- Admin: http://localhost:3000/admin/connections
+
+## Next Tasks
+1. Test Alerts Engine via Admin Panel
+2. Configure Telegram delivery when needed
+3. Twitter API integration for live data
