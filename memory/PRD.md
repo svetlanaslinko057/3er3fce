@@ -10,10 +10,15 @@
 │   ├── server.py                   # Python FastAPI proxy (port 8001)
 │   └── src/
 │       ├── server-minimal.ts       # Node.js Fastify (port 8003)
-│       └── modules/connections/    # Connections Module
+│       └── modules/connections/
+│           ├── api/                # Core API routes
+│           ├── share/              # P2.2: Graph State Share
+│           ├── notifications/      # Telegram alerts
+│           └── admin/              # Admin config
 ├── frontend/
 │   └── src/
-│       └── pages/                  # React pages (port 3000)
+│       └── pages/
+│           └── ConnectionsInfluenceGraphPage.jsx  # Graph with Share
 └── docs/                           # Documentation
 ```
 
@@ -36,9 +41,48 @@
   - Installed dependencies (yarn)
   - Backend: Node.js Fastify + Python proxy running
   - Frontend: React app running
-  - Added 3 test accounts (crypto_whale, alpha_hunter, defi_expert)
+  - Added test accounts
   - All API endpoints tested (18/18 passing)
   - Frontend pages verified (Connections, Radar, Admin)
+  - Removed Russian text from Connections UI
+
+- **2026-02-06**: P2.2 Share Graph State
+  - Backend encode/decode API endpoints
+  - GraphState v1 schema with normalization
+  - Frontend buildGraphState/applyGraphState helpers
+  - URL sync with replaceState (no history pollution)
+  - Share button with clipboard copy
+  - Telegram templates with Graph links
+  - Admin config: graph_share_enabled toggle
+
+## P2.2 Share Graph State - Contract
+
+### GraphState v1 Schema
+```typescript
+interface GraphStateV1 {
+  version: '1.0';
+  filters?: {
+    profiles?: string[];
+    early_signal?: string[];
+    risk_level?: string[];
+    edge_strength?: string[];
+    hide_isolated?: boolean;
+    limit_nodes?: number;
+  };
+  selected_nodes?: string[];
+  compare?: { left?: string; right?: string; active?: boolean } | null;
+  view?: 'graph' | 'table' | 'compare';
+  sort?: { field?: string; order?: 'asc' | 'desc' };
+  focus?: string;
+}
+```
+
+### API Endpoints
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| /api/connections/graph/state/encode | POST | Encode state to URL-safe base64 |
+| /api/connections/graph/state/decode | POST | Decode base64 back to state |
+| /api/connections/graph/state/info | GET | Version and capabilities info |
 
 ## Prioritized Backlog
 ### P0 (Critical) - Done
@@ -51,33 +95,23 @@
 - [ ] Twitter API integration (live data)
 - [ ] Alert delivery (Telegram/Discord)
 
-### P2 (Medium Priority) - Backlog
+### P2 (Medium Priority) - In Progress
+- [x] P2.2 Share Graph State
 - [ ] ML-enhanced scoring
 - [ ] Reddit Module
 - [ ] News Module
-
-## API Endpoints
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| /api/health | GET | System health |
-| /api/connections/health | GET | Module health |
-| /api/connections/accounts | GET | List accounts |
-| /api/connections/score | POST | Calculate score |
-| /api/connections/trends | POST | Trend analysis |
-| /api/connections/early-signal | POST | Early signals |
-| /api/admin/auth/login | POST | Admin login |
-| /api/admin/connections/overview | GET | Admin overview |
 
 ## Credentials
 - Admin: `admin` / `admin12345`
 - Telegram Bot Token: Configured in .env
 
 ## URLs
-- Connections: http://localhost:3000/connections
-- Radar: http://localhost:3000/connections/radar
-- Admin: http://localhost:3000/admin/connections
+- Connections: `/connections`
+- Graph: `/connections/graph`
+- Radar: `/connections/radar`
+- Admin: `/admin/connections`
 
 ## Next Tasks
-1. Test Alerts Engine via Admin Panel
-2. Configure Telegram delivery when needed
-3. Twitter API integration for live data
+1. Test Share links in different browsers
+2. Add Inline Keyboard buttons to Telegram alerts
+3. Configure Twitter API for live data
