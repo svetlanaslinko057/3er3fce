@@ -12,7 +12,7 @@ from datetime import datetime
 from typing import Dict, List, Optional, Any
 
 # Use production URL from frontend .env
-BACKEND_URL = "https://standalone-setup.preview.emergentagent.com"
+BACKEND_URL = "https://isolated-model.preview.emergentagent.com"
 
 class ConnectionsDropdownTester:
     def __init__(self):
