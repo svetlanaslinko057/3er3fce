@@ -90,6 +90,14 @@
 
 ### P1 - Graph как Продукт — ✅ ЗАВЕРШЁН
 
+### P2.1 - Telegram Delivery (ЗАВЕРШЁН ✅)
+- [x] Telegram Bot (@t_fomo_bot) подключен
+- [x] Admin UI для управления доставкой
+- [x] Типы алертов: Early Breakout, Strong Acceleration, Trend Reversal
+- [x] Cooldown настройки (24h/12h)
+- [x] Test Message / Dispatch Pending функции
+- [x] History и Stats API
+
 ### P2 - Интеграции
 - [ ] Twitter API интеграция (переключение Mock → Twitter Live)
 - [ ] Telegram Delivery для алертов
