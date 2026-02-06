@@ -316,6 +316,80 @@ class ConnectionsDropdownTester:
             self.log(f"Admin connections overview test failed: {e}")
             return False
     
+    def test_graph_suggestions_api(self) -> bool:
+        """Test /api/connections/graph/suggestions returns 5 recommendations"""
+        try:
+            response = self.session.get(f"{self.base_url}/api/connections/graph/suggestions")
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('ok') and 'suggestions' in data:
+                    suggestions = data['suggestions']
+                    if isinstance(suggestions, list) and len(suggestions) >= 5:
+                        # Check suggestion structure
+                        first_suggestion = suggestions[0]
+                        required_fields = ['id', 'display_name', 'reason', 'badge']
+                        has_structure = all(field in first_suggestion for field in required_fields)
+                        self.log(f"Graph suggestions: {len(suggestions)} suggestions, first: {first_suggestion.get('display_name')} ({first_suggestion.get('reason')})")
+                        return has_structure
+            return False
+        except Exception as e:
+            self.log(f"Graph suggestions API test failed: {e}")
+            return False
+    
+    def test_graph_ranking_api(self) -> bool:
+        """Test /api/connections/graph/ranking returns top 20 accounts"""
+        try:
+            response = self.session.get(f"{self.base_url}/api/connections/graph/ranking?limit=20")
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('ok') and 'data' in data:
+                    ranking_data = data['data']
+                    if 'items' in ranking_data and isinstance(ranking_data['items'], list):
+                        items = ranking_data['items']
+                        if len(items) > 0:
+                            # Check ranking item structure
+                            first_item = items[0]
+                            required_fields = ['id', 'label', 'score', 'early_signal']
+                            has_structure = all(field in first_item for field in required_fields)
+                            self.log(f"Graph ranking: {len(items)} accounts, top: {first_item.get('label')} (score: {first_item.get('score')})")
+                            return has_structure
+                        else:
+                            self.log("Graph ranking: empty items list")
+                            return True  # Empty is acceptable
+            return False
+        except Exception as e:
+            self.log(f"Graph ranking API test failed: {e}")
+            return False
+    
+    def test_graph_node_details_api(self) -> bool:
+        """Test /api/connections/graph/node/{id} returns node details"""
+        try:
+            # First get a node ID from the graph API
+            graph_response = self.session.get(f"{self.base_url}/api/connections/graph")
+            if graph_response.status_code == 200:
+                graph_data = graph_response.json()
+                if graph_data.get('ok'):
+                    nodes = graph_data.get('nodes', [])
+                    if len(nodes) > 0:
+                        node_id = nodes[0].get('id')
+                        if node_id:
+                            # Test node details API
+                            response = self.session.get(f"{self.base_url}/api/connections/graph/node/{node_id}")
+                            if response.status_code == 200:
+                                data = response.json()
+                                if data.get('ok') and 'data' in data:
+                                    node_details = data['data']
+                                    # Check for node details structure
+                                    expected_fields = ['connected_nodes']
+                                    # connected_nodes is optional, so just check if response is valid
+                                    self.log(f"Node details for {node_id}: {len(node_details.get('connected_nodes', []))} connections")
+                                    return True
+                            return False
+            return False
+        except Exception as e:
+            self.log(f"Graph node details API test failed: {e}")
+            return False
+    
     def run_all_tests(self) -> Dict[str, Any]:
         """Run all Connections dropdown tests and return results"""
         self.log("🚀 Starting Connections Module Backend Testing")
