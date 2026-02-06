@@ -168,3 +168,12 @@ interface GraphStateV1 {
 1. Test Share links in different browsers
 2. Add Inline Keyboard buttons to Telegram alerts
 3. Configure Twitter API for live data
+
+## Documentation
+| File | Description |
+|------|-------------|
+| `/app/docs/CONCEPT.md` | Product concept |
+| `/app/docs/CONNECTIONS_MODULE.md` | Full module documentation |
+| `/app/docs/TWITTER_SCORE_CORE.md` | **Phase 1: Twitter Score Core** |
+| `/app/docs/TELEGRAM_BOT.md` | Telegram integration |
+| `/app/docs/QUICK_START.md` | Quick start guide |
