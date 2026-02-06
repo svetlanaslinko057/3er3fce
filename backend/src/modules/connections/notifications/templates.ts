@@ -146,6 +146,7 @@ export function formatTelegramMessage(baseUrl: string, e: ConnectionsAlertEvent)
 
   // 🔄 TREND REVERSAL
   if (e.type === 'TREND_REVERSAL') {
+    const graphLink = buildGraphLinkWithState(baseUrl, e.account_id);
     return [
       '🔄 TREND CHANGE',
       '',
@@ -161,6 +162,9 @@ export function formatTelegramMessage(baseUrl: string, e: ConnectionsAlertEvent)
       '',
       '🔗 View analysis:',
       link,
+      '',
+      '📊 Open in Graph:',
+      graphLink,
     ].join('\n');
   }
 
