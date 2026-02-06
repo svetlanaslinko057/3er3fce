@@ -5,6 +5,10 @@
  * - Лейбл формат: 0xABCD…1234 (4+…+4)
  * - Текст ВНУТРИ круга, если не влезает — уменьшаем font-size
  * - State halo: ACCUMULATION = зелёный, DISTRIBUTION = красный
+ * 
+ * FOR CONNECTIONS GRAPH:
+ * - All nodes SAME SIZE (no scaling by influence)
+ * - Color by profile/early_signal
  */
 
 import { getNodeLabel } from '../core/formatLabel.js';
@@ -18,20 +22,33 @@ const COLORS = {
   accumulation: '#30A46C',  // green
   distribution: '#E5484D',  // red
   router: '#6b7280',        // gray (dashed)
+  // Connections-specific colors
+  breakout: '#22c55e',      // green - breakout
+  rising: '#eab308',        // yellow - rising
+  whale: '#8b5cf6',         // purple - whale
+  influencer: '#3b82f6',    // blue - influencer
+  retail: '#64748b',        // gray - retail
 };
 
 // ============ РАЗМЕРЫ ============
 const MIN_RADIUS = 16;
 const MAX_RADIUS = 40;
 const DEFAULT_RADIUS = 22;
+const FIXED_RADIUS = 20; // FIXED size for Connections graph
 
 /**
  * Получить радиус узла
+ * FOR CONNECTIONS: Always return FIXED_RADIUS for uniform nodes
  */
 export function getNodeRadius(node) {
   if (!node) return DEFAULT_RADIUS;
   
-  // Используем size если есть
+  // Connections graph mode: uniform size
+  if (node.profile || node.early_signal !== undefined) {
+    return FIXED_RADIUS;
+  }
+  
+  // Legacy mode: Используем size если есть
   if (node.size && typeof node.size === 'number') {
     return Math.max(MIN_RADIUS, Math.min(MAX_RADIUS, node.size));
   }
@@ -39,6 +56,22 @@ export function getNodeRadius(node) {
   // Используем influenceScore для масштабирования
   const influence = node.influenceScore || node.sizeWeight || 0.3;
   return MIN_RADIUS + (MAX_RADIUS - MIN_RADIUS) * Math.min(1, Math.max(0, influence));
+}
+
+/**
+ * Получить цвет узла для Connections graph
+ */
+function getConnectionsNodeColor(node) {
+  // By early_signal
+  if (node.early_signal === 'breakout') return COLORS.breakout;
+  if (node.early_signal === 'rising') return COLORS.rising;
+  
+  // By profile
+  if (node.profile === 'whale') return COLORS.whale;
+  if (node.profile === 'influencer') return COLORS.influencer;
+  if (node.profile === 'retail') return COLORS.retail;
+  
+  return COLORS.nodeFill;
 }
 
 /**
