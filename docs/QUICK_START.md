@@ -356,13 +356,41 @@ stdout_logfile=/var/log/supervisor/frontend.out.log
 2. **Протестировать Alerts Engine**
    - Admin → Connections → Alerts → Run Alerts Batch
 
-3. **Настроить параметры**
+3. **Протестировать Twitter Score API (Phase 1)**
+   ```bash
+   # Twitter Score
+   curl -s http://localhost:8001/api/connections/twitter-score/mock | jq
+   
+   # Audience Quality
+   curl -s http://localhost:8001/api/connections/audience-quality/mock | jq
+   
+   # Hops / Social Distance
+   curl -s http://localhost:8001/api/connections/hops/mock | jq
+   ```
+
+4. **Настроить параметры**
    - Admin → Connections → Config
 
-4. **Мониторить стабильность**
+5. **Мониторить стабильность**
    - Admin → Connections → Stability
+
+6. **Изучить документацию Phase 1**
+   - [TWITTER_SCORE_CORE.md](./TWITTER_SCORE_CORE.md)
 
 ---
 
-*Quick Start Guide v1.0*
+## 📚 Документация
+
+| Файл | Описание |
+|------|----------|
+| [CONCEPT.md](./CONCEPT.md) | Концепция продукта |
+| [CONNECTIONS_MODULE.md](./CONNECTIONS_MODULE.md) | Полная документация |
+| [TWITTER_SCORE_CORE.md](./TWITTER_SCORE_CORE.md) | **Phase 1: Twitter Score Core** |
+| [TELEGRAM_BOT.md](./TELEGRAM_BOT.md) | Telegram Bot документация |
+| [QUICK_START.md](./QUICK_START.md) | Этот файл |
+
+---
+
+*Quick Start Guide v1.1*
 *Connections Module — Isolated Deployment*
+*Updated: 2026-02-06 (Phase 1 complete)*
