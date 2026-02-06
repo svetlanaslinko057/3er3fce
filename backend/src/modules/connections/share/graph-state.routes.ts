@@ -52,11 +52,14 @@ export function registerGraphStateRoutes(app: FastifyInstance): void {
         return { ok: false, error: 'Invalid state', details: validation.errors };
       }
       
+      // Normalize state (convert aliases to canonical form)
+      const normalized = normalizeGraphState(state);
+      
       // Encode
-      const encoded = encodeGraphState(state);
+      const encoded = encodeGraphState(normalized);
       
       // Optionally create full URL
-      const shareUrl = baseUrl ? createShareUrl(baseUrl, state) : null;
+      const shareUrl = baseUrl ? createShareUrl(baseUrl, normalized) : null;
       
       return {
         ok: true,
@@ -65,6 +68,7 @@ export function registerGraphStateRoutes(app: FastifyInstance): void {
           shareUrl,
           length: encoded.length,
           version: '1.0',
+          normalized, // Return normalized state for debugging
         },
       };
     } catch (err: any) {
