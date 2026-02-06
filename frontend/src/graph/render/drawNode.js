@@ -119,12 +119,8 @@ export function drawNode(node, ctx, globalScale, opts = {}) {
   ctx.beginPath();
   ctx.arc(x, y, r, 0, Math.PI * 2);
   
-  // Connections mode: use profile/signal color
-  if (isConnectionsMode) {
-    ctx.fillStyle = getConnectionsNodeColor(node);
-  } else {
-    ctx.fillStyle = COLORS.nodeFill;
-  }
+  // All nodes same gray color
+  ctx.fillStyle = COLORS.nodeFill;
   ctx.fill();
   
   // Граница
