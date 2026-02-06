@@ -143,10 +143,19 @@ export function computeTwitterScore(input: TwitterScoreInput): TwitterScoreResul
 
   // Network proxy: use audience_quality if available, else fall back to early signal badge
   // Phase 1.2: audience_quality_score_0_1 replaces network_proxy
+  // Phase 1.3: authority_proximity_score_0_1 adds network authority signal
   const badge = input.early_signal_badge ?? "none";
+  
   const audienceQuality01 = input.audience_quality_score_0_1 != null
     ? clamp01(input.audience_quality_score_0_1)
     : cfg.proxies.network_from_early_signal[badge] ?? 0.5;
+
+  const authorityProximity01 = input.authority_proximity_score_0_1 != null
+    ? clamp01(input.authority_proximity_score_0_1)
+    : 0.50; // neutral if not available
+
+  // Combined network component: audience quality + authority proximity
+  const network01 = clamp01(0.65 * audienceQuality01 + 0.35 * authorityProximity01);
 
   // Consistency: default proxy (will be replaced by timeseries volatility later)
   const consistency01 = cfg.proxies.consistency_default;
