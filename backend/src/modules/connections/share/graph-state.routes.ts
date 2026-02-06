@@ -32,7 +32,7 @@ export function registerGraphStateRoutes(app: FastifyInstance): void {
   // POST /api/connections/graph/state/encode
   // Encode state to URL-safe string
   // ============================================================
-  app.post('/api/connections/graph/state/encode', async (
+  app.post('/graph/state/encode', async (
     req: FastifyRequest<{ Body: EncodeBody }>,
     reply: FastifyReply
   ) => {
