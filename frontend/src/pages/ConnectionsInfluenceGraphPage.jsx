@@ -568,38 +568,48 @@ export default function ConnectionsInfluenceGraphPage() {
         console.log('[GraphState] Restoring from URL...');
         const decoded = await decodeState(stateParam);
         if (decoded) {
-          // Apply filters
-          if (decoded.filters) {
-            setFilters(prev => ({
-              ...prev,
-              ...decoded.filters,
-            }));
+          // Apply state using helper
+          const compareResult = applyGraphState(decoded, setFilters, setSelectedNode, graphData.nodes);
+          
+          // Handle compare mode
+          if (compareResult) {
+            setCompareNode({ id: compareResult.nodeA });
+            setShowCompareModal(true);
           }
-          // Mark for highlight after graph loads
-          if (decoded.highlight) {
-            window.__graphHighlight = decoded.highlight;
-          }
+          
           console.log('[GraphState] Restored:', decoded);
         }
         setStateRestored(true);
       }
     };
     restoreState();
-  }, [searchParams, stateRestored]);
+  }, [searchParams, stateRestored, graphData.nodes]);
+
+  // P2.2.2b: Update URL when state changes (replaceState - no history pollution)
+  useEffect(() => {
+    if (!stateRestored) return; // Wait for initial restore
+    
+    const updateUrl = async () => {
+      const state = buildGraphState(filters, selectedNode, null);
+      const encoded = await encodeState(state);
+      
+      if (encoded) {
+        const newUrl = `${window.location.pathname}?state=${encoded}`;
+        window.history.replaceState(null, '', newUrl);
+      }
+    };
+    
+    // Debounce URL updates
+    const timeout = setTimeout(updateUrl, 500);
+    return () => clearTimeout(timeout);
+  }, [filters, selectedNode, stateRestored]);
 
   // P2.2.3: Share current state
   const handleShare = useCallback(async () => {
-    const state = {
-      filters: {
-        profiles: filters.profiles,
-        early_signal: filters.early_signal,
-        risk_level: filters.risk_level,
-        limit_nodes: filters.limit_nodes,
-      },
-      selectedNodes: selectedNode ? [selectedNode.id] : [],
-      highlight: selectedNode?.id,
-      view: 'graph',
-    };
+    const state = buildGraphState(filters, selectedNode, compareNode ? {
+      nodeA: compareNode.id,
+      nodeB: null, // Will be set when comparison is active
+    } : null);
     
     const encoded = await encodeState(state);
     if (encoded) {
@@ -613,7 +623,7 @@ export default function ConnectionsInfluenceGraphPage() {
         prompt('Copy this link:', shareUrl);
       }
     }
-  }, [filters, selectedNode]);
+  }, [filters, selectedNode, compareNode]);
 
   // Fetch graph data
   const fetchGraph = useCallback(async () => {
