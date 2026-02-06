@@ -442,10 +442,10 @@ export default function ConnectionsDetailPage() {
                 <div className="text-sm text-gray-600 bg-gray-50 rounded-lg p-3">
                   {earlySignal.explanation || (
                     earlySignal.badge === 'breakout' 
-                      ? 'Обнаружен ранний сигнал прорыва. Аккаунт быстро набирает влияние.'
+                      ? 'Early breakout signal detected. Account is rapidly gaining influence.'
                       : earlySignal.badge === 'rising'
-                        ? 'Положительная динамика. Рекомендуется наблюдение.'
-                        : 'Нет значимых сигналов раннего роста.'
+                        ? 'Positive dynamics. Monitoring recommended.'
+                        : 'No significant early growth signals.'
                   )}
                 </div>
                 {earlySignal.reasons?.length > 0 && (
