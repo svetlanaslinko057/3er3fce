@@ -54,6 +54,22 @@ export function buildRadarLink(baseUrl: string): string {
   return `${clean}/connections/radar`;
 }
 
+/**
+ * P2.2.4: Build Graph link with state (highlight specific node)
+ */
+export function buildGraphLinkWithState(baseUrl: string, accountId: string): string {
+  const clean = baseUrl?.replace(/\/+$/, '') || '';
+  // Simple state: just highlight the account
+  const state = {
+    version: '1.0',
+    highlight: accountId,
+    view: 'graph',
+  };
+  const encoded = Buffer.from(JSON.stringify(state), 'utf-8').toString('base64')
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  return `${clean}/connections/graph?state=${encoded}`;
+}
+
 // ============================================================
 // MESSAGE TEMPLATES
 // ============================================================
