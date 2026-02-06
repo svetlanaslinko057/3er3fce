@@ -51,9 +51,9 @@ const TrendBadge = ({ state }) => {
 // Early Signal Badge
 const EarlySignalBadge = ({ badge, score }) => {
   const configs = {
-    breakout: { label: 'Прорыв', emoji: '🚀', className: 'bg-green-100 text-green-700' },
-    rising: { label: 'Рост', emoji: '📈', className: 'bg-yellow-100 text-yellow-700' },
-    none: { label: 'Нет', emoji: '➖', className: 'bg-gray-100 text-gray-500' },
+    breakout: { label: 'Breakout', emoji: '🚀', className: 'bg-green-100 text-green-700' },
+    rising: { label: 'Rising', emoji: '📈', className: 'bg-yellow-100 text-yellow-700' },
+    none: { label: 'None', emoji: '➖', className: 'bg-gray-100 text-gray-500' },
   };
   const config = configs[badge] || configs.none;
   return (
@@ -359,7 +359,7 @@ function InfluenceBlock({ account, winner }) {
         <span className="font-mono font-bold text-lg">{adjusted}</span>
       </div>
       <div className={`text-sm ${delta >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-        {delta >= 0 ? '+' : ''}{delta} от тренда
+        {delta >= 0 ? '+' : ''}{delta} from trend
       </div>
     </div>
   );
@@ -415,9 +415,9 @@ function EarlySignalBlock({ account, winner }) {
         )}
       </div>
       <div className="mt-2 text-sm text-gray-600">
-        {badge === 'breakout' && 'Высокий потенциал прорыва'}
-        {badge === 'rising' && 'Положительная динамика'}
-        {badge === 'none' && 'Нет сигналов роста'}
+        {badge === 'breakout' && 'High breakout potential'}
+        {badge === 'rising' && 'Positive dynamics'}
+        {badge === 'none' && 'No growth signals'}
       </div>
     </div>
   );
@@ -468,22 +468,22 @@ function VerdictBlock({ accountA, accountB, influenceWinner, earlyWinner, trendI
 
 // Helper functions
 function generateTrendImpact(a, b, winner) {
-  if (winner === 'tie') return 'Оба аккаунта имеют схожую динамику.';
+  if (winner === 'tie') return 'Both accounts have similar dynamics.';
   const stronger = winner === 'a' ? a : b;
   const weaker = winner === 'a' ? b : a;
   
   if (stronger.trend?.velocity_norm > weaker.trend?.velocity_norm) {
-    return `@${stronger.username} растёт быстрее — тренд усиливает лидерство.`;
+    return `@${stronger.username} is growing faster — trend reinforces leadership.`;
   }
-  return `@${stronger.username} имеет более сильное текущее влияние.`;
+  return `@${stronger.username} has stronger current influence.`;
 }
 
 function generateRecommendation(a, b, winner) {
-  if (winner === 'tie') return 'Оба аккаунта имеют схожий потенциал раннего роста.';
+  if (winner === 'tie') return 'Both accounts have similar early growth potential.';
   const stronger = winner === 'a' ? a : b;
   
   if (stronger.early_signal?.badge === 'breakout') {
-    return `@${stronger.username} демонстрирует сильный сигнал прорыва — рекомендуется приоритетное наблюдение.`;
+    return `@${stronger.username} shows strong breakout signal — priority monitoring recommended.`;
   }
-  return `@${stronger.username} показывает более сильную динамику раннего роста.`;
+  return `@${stronger.username} shows stronger early growth dynamics.`;
 }
