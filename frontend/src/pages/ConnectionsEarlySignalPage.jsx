@@ -682,13 +682,13 @@ const EarlySignalDetailsPanel = ({ account, onClose }) => {
           </div>
           <div className="text-sm text-gray-600">
             {account.early_signal.badge === 'breakout' && (
-              <p>🚀 Обнаружен ранний сигнал: аккаунт быстро усиливает влияние и может стать значимым.</p>
+              <p>🚀 Early breakout signal detected: account is rapidly gaining influence and may become significant.</p>
             )}
             {account.early_signal.badge === 'rising' && (
-              <p>📈 Аккаунт демонстрирует положительную динамику и заслуживает наблюдения.</p>
+              <p>📈 Account shows positive dynamics and deserves monitoring.</p>
             )}
             {account.early_signal.badge === 'none' && (
-              <p>➖ Ранних сигналов роста не обнаружено.</p>
+              <p>➖ No early growth signals detected.</p>
             )}
           </div>
           <div className="mt-3 pt-3 border-t border-gray-200">
