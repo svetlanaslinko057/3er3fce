@@ -30,40 +30,11 @@ const COLORS = {
 
 /**
  * Определить цвет ребра по типу (для Connections)
+ * ALL EDGES SAME COLOR - just showing network connections
  */
 function getConnectionsLinkColor(link) {
-  const source = link.source;
-  const target = link.target;
-  
-  // Check edge_type
-  if (link.edge_type) {
-    if (link.edge_type === 'OVERLAP') return COLORS.overlap;
-    if (link.edge_type === 'INFLUENCE') return COLORS.influencer;
-  }
-  
-  // Derive from source/target early_signal
-  const srcSignal = source?.early_signal;
-  const tgtSignal = target?.early_signal;
-  
-  if (srcSignal === 'breakout' || tgtSignal === 'breakout') {
-    return COLORS.breakout;
-  }
-  if (srcSignal === 'rising' || tgtSignal === 'rising') {
-    return COLORS.rising;
-  }
-  
-  // Derive from source/target profile
-  const srcProfile = source?.profile;
-  const tgtProfile = target?.profile;
-  
-  if (srcProfile === 'whale' || tgtProfile === 'whale') {
-    return COLORS.whale;
-  }
-  if (srcProfile === 'influencer' || tgtProfile === 'influencer') {
-    return COLORS.influencer;
-  }
-  
-  return COLORS.retail;
+  // All connections same green color for visibility
+  return '#30A46C'; // green
 }
 
 /**
