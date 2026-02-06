@@ -14,7 +14,9 @@ import {
   Users,
   TrendingUp,
   AlertTriangle,
-  Radio
+  Radio,
+  Sparkles,
+  Scale
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import ForceGraphCore from '../graph/core/ForceGraphCore';
