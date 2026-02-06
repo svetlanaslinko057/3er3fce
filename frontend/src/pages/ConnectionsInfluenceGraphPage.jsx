@@ -466,6 +466,7 @@ const RankingTable = ({ ranking, onNodeSelect, selectedId }) => {
 // ============================================================
 
 export default function ConnectionsInfluenceGraphPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [graphData, setGraphData] = useState({ nodes: [], links: [] });
   const [ranking, setRanking] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -473,8 +474,10 @@ export default function ConnectionsInfluenceGraphPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedNode, setSelectedNode] = useState(null);
   const [nodeDetails, setNodeDetails] = useState(null);
-  const [compareNode, setCompareNode] = useState(null); // For Compare Modal
+  const [compareNode, setCompareNode] = useState(null);
   const [showCompareModal, setShowCompareModal] = useState(false);
+  const [stateRestored, setStateRestored] = useState(false);
+  const [shareToast, setShareToast] = useState(false);
   const [filters, setFilters] = useState({
     profiles: ['retail', 'influencer', 'whale'],
     early_signal: [],
@@ -483,6 +486,61 @@ export default function ConnectionsInfluenceGraphPage() {
     hide_isolated: false,
     limit_nodes: 50,
   });
+
+  // P2.2.2: Restore state from URL on mount
+  useEffect(() => {
+    const restoreState = async () => {
+      const stateParam = searchParams.get('state');
+      if (stateParam && !stateRestored) {
+        console.log('[GraphState] Restoring from URL...');
+        const decoded = await decodeState(stateParam);
+        if (decoded) {
+          // Apply filters
+          if (decoded.filters) {
+            setFilters(prev => ({
+              ...prev,
+              ...decoded.filters,
+            }));
+          }
+          // Mark for highlight after graph loads
+          if (decoded.highlight) {
+            window.__graphHighlight = decoded.highlight;
+          }
+          console.log('[GraphState] Restored:', decoded);
+        }
+        setStateRestored(true);
+      }
+    };
+    restoreState();
+  }, [searchParams, stateRestored]);
+
+  // P2.2.3: Share current state
+  const handleShare = useCallback(async () => {
+    const state = {
+      filters: {
+        profiles: filters.profiles,
+        early_signal: filters.early_signal,
+        risk_level: filters.risk_level,
+        limit_nodes: filters.limit_nodes,
+      },
+      selectedNodes: selectedNode ? [selectedNode.id] : [],
+      highlight: selectedNode?.id,
+      view: 'graph',
+    };
+    
+    const encoded = await encodeState(state);
+    if (encoded) {
+      const shareUrl = `${window.location.origin}/connections/graph?state=${encoded}`;
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        setShareToast(true);
+        setTimeout(() => setShareToast(false), 2000);
+      } catch (e) {
+        // Fallback for older browsers
+        prompt('Copy this link:', shareUrl);
+      }
+    }
+  }, [filters, selectedNode]);
 
   // Fetch graph data
   const fetchGraph = useCallback(async () => {
