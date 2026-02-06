@@ -335,35 +335,49 @@ class HopsEngineAPITester:
         return True
 
     def test_admin_endpoints(self):
-        """Test admin endpoints (may not exist yet)"""
-        # Test GET admin config
-        success, result = self.make_request('GET', '../admin/connections/hops/config')
+        """Test admin endpoints"""
+        # Test GET admin config (correct path: /api/connections/admin/connections/hops/config)
+        success, result = self.make_request('GET', 'admin/connections/hops/config')
         
         if not success or result.get('status_code') == 404:
-            self.log_test("Admin Config Endpoint", False, "Admin endpoints not implemented yet (expected)")
+            self.log_test("Admin Config Endpoint", False, "Admin endpoints not found")
             return False
         
         if result.get('status_code') != 200:
             self.log_test("Admin Config Endpoint", False, f"Status {result.get('status_code')}")
             return False
         
-        self.log_test("Admin Config Endpoint", True, "Admin config accessible")
+        # Verify admin config structure
+        data = result.get('data', {}).get('data', {})
+        if 'enabled' not in data or 'config' not in data:
+            self.log_test("Admin Config Endpoint", False, "Missing admin config structure")
+            return False
+        
+        self.log_test("Admin Config Endpoint", True, f"Admin config accessible, version: {data.get('version')}")
         
         # Test PATCH admin config (if GET worked)
         patch_data = {
             "defaults": {
-                "max_hops": 3,
-                "edge_min_strength": 0.4
+                "edge_min_strength": 0.45
             }
         }
         
-        success, result = self.make_request('PATCH', '../admin/connections/hops/config', patch_data)
+        success, result = self.make_request('PATCH', 'admin/connections/hops/config', patch_data)
         
         if result.get('status_code') != 200:
             self.log_test("Admin Config Update", False, f"Status {result.get('status_code')}")
             return False
         
-        self.log_test("Admin Config Update", True, "Admin config update successful")
+        # Verify the update was applied
+        response_data = result.get('data', {}).get('data', {})
+        updated_config = response_data.get('config', {})
+        updated_strength = updated_config.get('defaults', {}).get('edge_min_strength')
+        
+        if updated_strength != 0.45:
+            self.log_test("Admin Config Update", False, f"Update not applied: {updated_strength}")
+            return False
+        
+        self.log_test("Admin Config Update", True, f"Admin config updated: edge_min_strength = {updated_strength}")
         return True
 
     def test_bfs_algorithm(self):
