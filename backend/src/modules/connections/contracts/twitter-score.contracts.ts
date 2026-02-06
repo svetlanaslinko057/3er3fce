@@ -45,6 +45,9 @@ export interface TwitterScoreInput {
     reachable_whales?: number;
     shortest_path_to_key?: number;
   };
+
+  // Phase 1.2: Audience Quality (replaces network_proxy)
+  audience_quality_score_0_1?: number;
 }
 
 /**
