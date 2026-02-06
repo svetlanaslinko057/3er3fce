@@ -504,9 +504,11 @@ class ConnectionsDropdownTester:
                                 # Validate decoded state matches original
                                 decoded_state = result_data.get('state', {})
                                 version_match = decoded_state.get('version') == test_state['version']
-                                highlight_match = decoded_state.get('highlight') == test_state['highlight']
+                                # Backend normalizes 'highlight' to 'focus'
+                                highlight_match = (decoded_state.get('highlight') == test_state['highlight'] or 
+                                                 decoded_state.get('focus') == test_state['highlight'])
                                 
-                                self.log(f"Graph state decode: valid={result_data.get('valid')}, version_match={version_match}")
+                                self.log(f"Graph state decode: valid={result_data.get('valid')}, version_match={version_match}, highlight_match={highlight_match}")
                                 return has_required and version_match and highlight_match
             return False
         except Exception as e:
