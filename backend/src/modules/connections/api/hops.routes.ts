@@ -94,6 +94,12 @@ export async function hopsRoutes(app: FastifyInstance) {
         return { ok: false, error: "account_id is required" };
       }
 
+      // Validate max_hops if provided
+      if (input.max_hops && ![1, 2, 3].includes(input.max_hops)) {
+        reply.code(400);
+        return { ok: false, error: "max_hops must be 1, 2, or 3" };
+      }
+
       // Use mock graph for now (will be replaced with real graph builder)
       const snapshot = getMockGraph();
       
