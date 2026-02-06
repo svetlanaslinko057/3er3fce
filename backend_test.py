@@ -494,13 +494,9 @@ class HopsEngineAPITester:
             "max_hops": 5  # Should be 1-3
         })
         
-        # This might not fail immediately but should use default
-        if result.get('status_code') == 200:
-            data = result.get('data', {}).get('data', {})
-            max_hops_used = data.get('summary', {}).get('max_hops')
-            if max_hops_used > 3:
-                self.log_test("Error Handling - Invalid Max Hops", False, f"Used invalid max_hops: {max_hops_used}")
-                return False
+        if result.get('status_code') != 400:
+            self.log_test("Error Handling - Invalid Max Hops", False, f"Expected 400, got {result.get('status_code')}")
+            return False
         
         # Test batch with too many items
         large_batch = {
