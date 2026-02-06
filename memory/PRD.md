@@ -56,18 +56,26 @@
 
 ## Что реализовано (2026-02-06)
 
-### Backend
+### P0 - Backend Core (ЗАВЕРШЁН ✅)
 - [x] FastAPI proxy → Node.js Fastify
 - [x] Connections Module API endpoints
 - [x] Admin authentication (JWT)
 - [x] MongoDB подключение
 - [x] Mock data generation
 
-### Frontend
-- [x] /connections — список инфлюенсеров
-- [x] /connections/radar — Early Signal визуализация
-- [x] /admin/connections — Admin Control Plane
-- [x] Фильтры и сортировка
+### P1 - Graph как Продукт (ЗАВЕРШЁН ✅)
+- [x] **Filter Modal** (schema-driven) — фильтрация по profile, early signal, risk level
+- [x] **Suggestions Panel** ("Explore Suggestions") — 5 рекомендаций с причинами
+- [x] **Node Details Panel** — клик по ноде → влияние, сигнал, связи
+- [x] **Compare из графа** — кнопка "Compare with..." → выбор второго аккаунта → сравнение
+- [x] **Ranking Table** — Top 10 инфлюенсеров, синхронизация с графом
+- [x] **Навигация** — Influencers | Graph | Radar табы
+
+### Frontend Pages
+- [x] `/connections` — список инфлюенсеров
+- [x] `/connections/graph` — Force Graph визуализация с фильтрами
+- [x] `/connections/radar` — Early Signal визуализация
+- [x] `/admin/connections` — Admin Control Plane
 
 ### API Endpoints
 - `GET /api/connections/health`
