@@ -136,6 +136,20 @@ export async function hopsRoutes(app: FastifyInstance) {
         return { ok: false, error: "Maximum 50 items per batch" };
       }
 
+      // Validate each item
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (!item?.account_id) {
+          reply.code(400);
+          return { ok: false, error: `Item ${i}: account_id is required` };
+        }
+        
+        if (item.max_hops && ![1, 2, 3].includes(item.max_hops)) {
+          reply.code(400);
+          return { ok: false, error: `Item ${i}: max_hops must be 1, 2, or 3` };
+        }
+      }
+
       const snapshot = getMockGraph();
       const result = computeHopsBatch(items, snapshot);
       
