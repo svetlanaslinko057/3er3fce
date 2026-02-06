@@ -153,10 +153,33 @@ class ConnectionsDropdownTester:
     def test_connections_compare_api(self) -> bool:
         """Test /api/connections/compare for Compare functionality"""
         try:
-            # Test compare with mock data
+            # First get some real handles from the accounts API
+            accounts_response = self.session.get(f"{self.base_url}/api/connections/accounts?limit=5")
+            if accounts_response.status_code == 200:
+                accounts_data = accounts_response.json()
+                if accounts_data.get('ok') and 'data' in accounts_data:
+                    items = accounts_data['data'].get('items', [])
+                    if len(items) >= 2:
+                        # Use real handles
+                        left_handle = items[0].get('handle')
+                        right_handle = items[1].get('handle')
+                    else:
+                        # Fallback to mock handles from graph
+                        left_handle = "crypto_alpha"
+                        right_handle = "defi_hunter"
+                else:
+                    # Fallback to mock handles
+                    left_handle = "crypto_alpha"
+                    right_handle = "defi_hunter"
+            else:
+                # Fallback to mock handles
+                left_handle = "crypto_alpha"
+                right_handle = "defi_hunter"
+            
+            # Test compare with real data
             compare_data = {
-                "left": "test_user_1",
-                "right": "test_user_2"
+                "left": left_handle,
+                "right": right_handle
             }
             response = self.session.post(
                 f"{self.base_url}/api/connections/compare",
@@ -176,6 +199,7 @@ class ConnectionsDropdownTester:
                         overlap = compare_result['audience_overlap']
                         overlap_fields = ['a_to_b', 'b_to_a', 'shared_users', 'jaccard_similarity']
                         has_overlap_structure = all(field in overlap for field in overlap_fields)
+                        self.log(f"Compare result: {left_handle} vs {right_handle}, jaccard={overlap.get('jaccard_similarity', 0):.3f}")
                         return has_required and has_overlap_structure
                     
                     return has_required
