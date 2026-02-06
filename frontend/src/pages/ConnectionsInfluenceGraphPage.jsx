@@ -705,7 +705,28 @@ export default function ConnectionsInfluenceGraphPage() {
           </Link>
           
           {/* Filters button */}
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-2">
+            {/* Share Button */}
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={handleShare}
+              className="relative"
+              data-testid="graph-share-btn"
+            >
+              {shareToast ? (
+                <>
+                  <Check className="w-4 h-4 mr-1 text-green-500" />
+                  Copied!
+                </>
+              ) : (
+                <>
+                  <Share2 className="w-4 h-4 mr-1" />
+                  Share
+                </>
+              )}
+            </Button>
+            
             <Button 
               variant="outline" 
               size="sm"
