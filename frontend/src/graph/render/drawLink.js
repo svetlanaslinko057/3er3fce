@@ -6,6 +6,10 @@
  * - ❌ НЕТ серого/нейтрального цвета
  * - Линия КАСАЕТСЯ окружности узла (snapping)
  * - Direction определяется по netFlow или from/to относительно subject
+ * 
+ * FOR CONNECTIONS GRAPH:
+ * - Colors by edge_type: OVERLAP, INFLUENCE, etc.
+ * - Colors by source/target profile/early_signal
  */
 
 import { snapLineToCircles, getCorridorOffset, buildCorridorPath } from '../core/geometry.js';
@@ -15,7 +19,52 @@ import { getNodeRadius } from './drawNode.js';
 const COLORS = {
   inflow: '#30A46C',   // Зелёный = IN
   outflow: '#E5484D',  // Красный = OUT
+  // Connections-specific edge colors
+  breakout: '#22c55e',      // green - breakout connections
+  rising: '#eab308',        // yellow - rising connections
+  whale: '#8b5cf6',         // purple - whale connections
+  influencer: '#3b82f6',    // blue - influencer connections
+  retail: '#94a3b8',        // light gray - retail connections
+  overlap: '#6366f1',       // indigo - overlap edges
 };
+
+/**
+ * Определить цвет ребра по типу (для Connections)
+ */
+function getConnectionsLinkColor(link) {
+  const source = link.source;
+  const target = link.target;
+  
+  // Check edge_type
+  if (link.edge_type) {
+    if (link.edge_type === 'OVERLAP') return COLORS.overlap;
+    if (link.edge_type === 'INFLUENCE') return COLORS.influencer;
+  }
+  
+  // Derive from source/target early_signal
+  const srcSignal = source?.early_signal;
+  const tgtSignal = target?.early_signal;
+  
+  if (srcSignal === 'breakout' || tgtSignal === 'breakout') {
+    return COLORS.breakout;
+  }
+  if (srcSignal === 'rising' || tgtSignal === 'rising') {
+    return COLORS.rising;
+  }
+  
+  // Derive from source/target profile
+  const srcProfile = source?.profile;
+  const tgtProfile = target?.profile;
+  
+  if (srcProfile === 'whale' || tgtProfile === 'whale') {
+    return COLORS.whale;
+  }
+  if (srcProfile === 'influencer' || tgtProfile === 'influencer') {
+    return COLORS.influencer;
+  }
+  
+  return COLORS.retail;
+}
 
 /**
  * Определить цвет ребра по direction
