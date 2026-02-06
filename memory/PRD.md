@@ -55,6 +55,20 @@
   - Telegram templates with Graph links
   - Admin config: graph_share_enabled toggle
 
+- **2026-02-06**: **PHASE 1.1 - Unified Twitter Score v1.0**
+  - Twitter Score Engine (0-1000 scale)
+  - Grade system: S (850+) / A (700+) / B (550+) / C (400+) / D (<400)
+  - Confidence levels: LOW / MED / HIGH
+  - Weighted components:
+    - influence (35%) - base engagement/reach
+    - quality (20%) - x_score + signal/noise
+    - trend (20%) - velocity + acceleration
+    - network_proxy (15%) - proxy until follower data
+    - consistency (10%) - proxy until timeseries
+  - Penalty system for risk_level and red_flags
+  - Explainable: drivers, concerns, recommendations
+  - API: /api/connections/twitter-score/*
+
 ## P2.2 Share Graph State - Contract
 
 ### GraphState v1 Schema
