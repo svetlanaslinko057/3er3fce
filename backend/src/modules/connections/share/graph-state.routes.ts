@@ -13,6 +13,7 @@ import {
   encodeGraphState, 
   decodeGraphState, 
   validateGraphState,
+  normalizeGraphState,
   createShareUrl,
   type GraphStateV1 
 } from './graph-state.service.js';
