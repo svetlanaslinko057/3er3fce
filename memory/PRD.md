@@ -120,7 +120,7 @@ interface GraphStateV1 {
 
 ### PHASE 1 - Twitter Score Core - In Progress
 - [x] **1.1 Unified Twitter Score v1.0** - DONE
-- [ ] **1.2 Audience Quality Engine** (smart followers, tier-1, bot share)
+- [x] **1.2 Audience Quality Engine v1.0** - DONE
 - [ ] **1.3 Handshakes / Social Distance** (hops engine)
 
 ### PHASE 2 - Time & Behavior Analytics
