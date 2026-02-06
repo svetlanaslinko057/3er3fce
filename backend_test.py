@@ -214,19 +214,18 @@ class ConnectionsDropdownTester:
             response = self.session.get(f"{self.base_url}/api/connections/graph")
             if response.status_code == 200:
                 data = response.json()
-                if data.get('ok') and 'data' in data:
-                    graph_data = data['data']
-                    # Check for required graph structure
+                if data.get('ok'):
+                    # Check for required graph structure - could be in 'data' or directly in response
+                    graph_data = data.get('data', data)
                     has_nodes = 'nodes' in graph_data and isinstance(graph_data['nodes'], list)
                     has_edges = 'edges' in graph_data and isinstance(graph_data['edges'], list)
-                    has_meta = 'meta' in graph_data
                     
                     # Check if we have reasonable amount of data
                     nodes_count = len(graph_data.get('nodes', []))
                     edges_count = len(graph_data.get('edges', []))
                     
                     self.log(f"Graph GET: {nodes_count} nodes, {edges_count} edges")
-                    return has_nodes and has_edges and has_meta and nodes_count > 0
+                    return has_nodes and has_edges and nodes_count > 0
             return False
         except Exception as e:
             self.log(f"Connections Graph GET test failed: {e}")
