@@ -50,7 +50,17 @@ async function adminFetch(endpoint, options = {}) {
     throw new Error('UNAUTHORIZED');
   }
 
-  const data = await response.json();
+  // Clone response to avoid "body stream already read" error
+  const clonedResponse = response.clone();
+  
+  let data;
+  try {
+    data = await response.json();
+  } catch (parseError) {
+    // If JSON parsing fails, try to get text for error message
+    const text = await clonedResponse.text();
+    throw new Error(text || 'Failed to parse response');
+  }
   
   if (!response.ok) {
     throw new Error(data.message || data.error || 'Request failed');
