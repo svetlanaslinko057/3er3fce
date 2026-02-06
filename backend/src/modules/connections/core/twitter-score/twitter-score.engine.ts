@@ -141,9 +141,12 @@ export function computeTwitterScore(input: TwitterScoreInput): TwitterScoreResul
   // Trend from velocity/acceleration
   const trend01 = computeTrend01(velocity, acceleration);
 
-  // Network proxy: use early signal badge (will be replaced by audience quality later)
+  // Network proxy: use audience_quality if available, else fall back to early signal badge
+  // Phase 1.2: audience_quality_score_0_1 replaces network_proxy
   const badge = input.early_signal_badge ?? "none";
-  const networkProxy01 = cfg.proxies.network_from_early_signal[badge] ?? 0.5;
+  const audienceQuality01 = input.audience_quality_score_0_1 != null
+    ? clamp01(input.audience_quality_score_0_1)
+    : cfg.proxies.network_from_early_signal[badge] ?? 0.5;
 
   // Consistency: default proxy (will be replaced by timeseries volatility later)
   const consistency01 = cfg.proxies.consistency_default;
