@@ -119,7 +119,7 @@ export function registerGraphStateRoutes(app: FastifyInstance): void {
   // GET /api/connections/graph/state/info
   // Get state version and capabilities info
   // ============================================================
-  app.get('/api/connections/graph/state/info', async (_req: FastifyRequest, reply: FastifyReply) => {
+  app.get('/graph/state/info', async (_req: FastifyRequest, reply: FastifyReply) => {
     return {
       ok: true,
       data: {
