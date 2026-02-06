@@ -1182,8 +1182,8 @@ const ConnectionsEarlySignalPage = () => {
         <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-3">
           <Info className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
           <div className="text-sm text-blue-700">
-            <strong>Alpha Zone</strong> (правый верх) — аккаунты с высоким ускорением роста и влиянием. 
-            Это кандидаты, которых рынок ещё не заметил.
+            <strong>Alpha Zone</strong> (top right) — accounts with high growth acceleration and influence. 
+            These are candidates that the market hasn't noticed yet.
           </div>
         </div>
 
@@ -1193,7 +1193,7 @@ const ConnectionsEarlySignalPage = () => {
             <div className="flex items-center justify-center h-96">
               <div className="text-center">
                 <RefreshCw className="w-8 h-8 text-gray-400 animate-spin mx-auto mb-3" />
-                <p className="text-gray-500">Загрузка данных...</p>
+                <p className="text-gray-500">Loading data...</p>
               </div>
             </div>
           ) : filteredAccounts.length === 0 ? (
