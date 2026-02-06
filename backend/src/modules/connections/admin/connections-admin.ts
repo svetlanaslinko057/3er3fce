@@ -13,6 +13,10 @@ export interface ConnectionsAdminConfig {
   influence_score_enabled: boolean;
   risk_detection_enabled: boolean;
   
+  // P2.2: Graph Share
+  graph_share_enabled: boolean;
+  graph_share_version: string;
+  
   // Thresholds
   thresholds: {
     high_risk_score: number;      // Below this = high risk
@@ -31,6 +35,10 @@ export const connectionsAdminConfig: ConnectionsAdminConfig = {
   
   influence_score_enabled: true,
   risk_detection_enabled: true,
+  
+  // P2.2: Graph Share
+  graph_share_enabled: true,
+  graph_share_version: '1.0',
   
   thresholds: {
     high_risk_score: 200,
