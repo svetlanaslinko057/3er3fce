@@ -98,6 +98,13 @@
 - [x] Test Message / Dispatch Pending функции
 - [x] History и Stats API
 
+### P2.2 - Share / Persist Graph State (ЗАВЕРШЁН ✅)
+- [x] Backend API: encode/decode state (base64-url-safe)
+- [x] Frontend: state restore from URL (?state=...)
+- [x] Share Button с копированием URL
+- [x] Telegram → Open in Graph ссылки
+- [x] Version control (GraphState v1.0)
+
 ### P2 - Интеграции
 - [ ] Twitter API интеграция (переключение Mock → Twitter Live)
 - [ ] Telegram Delivery для алертов
