@@ -294,6 +294,175 @@ Content-Type: application/json
 
 ---
 
+## 3.3 Twitter Score API (Phase 1.1)
+
+Base URL: `/api/connections/twitter-score`
+
+### Compute Twitter Score
+```http
+POST /api/connections/twitter-score
+Content-Type: application/json
+
+{
+  "account_id": "test_001",
+  "base_influence": 650,
+  "x_score": 580,
+  "signal_noise": 6.5,
+  "velocity": 15,
+  "acceleration": 8,
+  "risk_level": "LOW",
+  "red_flags": [],
+  "early_signal_badge": "rising",
+  "audience_quality_score_0_1": 0.75,
+  "authority_proximity_score_0_1": 0.50
+}
+```
+
+### Batch Compute
+```http
+POST /api/connections/twitter-score/batch
+Content-Type: application/json
+
+{
+  "accounts": [
+    { "account_id": "001", "base_influence": 650, ... },
+    { "account_id": "002", "base_influence": 720, ... }
+  ]
+}
+```
+
+### Mock Examples
+```http
+GET /api/connections/twitter-score/mock
+```
+
+### Info & Config
+```http
+GET /api/connections/twitter-score/info
+GET /api/connections/twitter-score/config
+PUT /api/connections/twitter-score/config
+```
+
+---
+
+## 3.4 Audience Quality API (Phase 1.2)
+
+Base URL: `/api/connections/audience-quality`
+
+### Compute Audience Quality
+```http
+POST /api/connections/audience-quality
+Content-Type: application/json
+
+{
+  "account_id": "test_001",
+  "x_score": 720,
+  "signal_noise": 7.5,
+  "consistency_0_1": 0.65,
+  "red_flags": ["VIRAL_SPIKE"],
+  "overlap": {
+    "avg_jaccard": 0.06,
+    "max_jaccard": 0.14,
+    "avg_shared": 18,
+    "max_shared": 42,
+    "sample_size": 9
+  }
+}
+```
+
+### Other Endpoints
+```http
+POST /api/connections/audience-quality/batch
+GET  /api/connections/audience-quality/mock
+GET  /api/connections/audience-quality/info
+GET  /api/connections/audience-quality/config
+```
+
+### Admin Endpoints
+```http
+GET   /api/admin/connections/audience-quality/config
+PATCH /api/admin/connections/audience-quality/config
+GET   /api/admin/connections/audience-quality/red-flags
+PUT   /api/admin/connections/audience-quality/red-flags
+```
+
+---
+
+## 3.5 Hops / Social Distance API (Phase 1.3)
+
+Base URL: `/api/connections/hops`
+
+### Compute Shortest Paths
+```http
+POST /api/connections/hops
+Content-Type: application/json
+
+{
+  "account_id": "test_account",
+  "max_hops": 3,
+  "top_nodes": {
+    "mode": "top_n",
+    "top_n": 20,
+    "score_field": "twitter_score"
+  },
+  "edge_min_strength": 0.35
+}
+```
+
+### Other Endpoints
+```http
+POST /api/connections/hops/batch
+GET  /api/connections/hops/mock
+GET  /api/connections/hops/info
+GET  /api/connections/hops/config
+```
+
+### Admin Endpoints
+```http
+GET   /api/admin/connections/hops/config
+PATCH /api/admin/connections/hops/config
+GET   /api/admin/connections/hops/scoring
+```
+
+---
+
+## 3.6 Graph State Share API (Phase 2.2)
+
+Base URL: `/api/connections/graph/state`
+
+### Encode State
+```http
+POST /api/connections/graph/state/encode
+Content-Type: application/json
+
+{
+  "state": {
+    "version": "1.0",
+    "filters": { "profiles": ["whale"], "early_signal": ["breakout"] },
+    "selected_nodes": ["account_001"],
+    "compare": { "left": "acc_1", "right": "acc_2" },
+    "view": "compare"
+  }
+}
+```
+
+### Decode State
+```http
+POST /api/connections/graph/state/decode
+Content-Type: application/json
+
+{
+  "encoded": "eyJ2ZXJzaW9uIjoiMS4wIi..."
+}
+```
+
+### Info
+```http
+GET /api/connections/graph/state/info
+```
+
+---
+
 ## 3.2 Admin Connections API
 
 Base URL: `/api/admin/connections`
