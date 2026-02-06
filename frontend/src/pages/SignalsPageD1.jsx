@@ -70,22 +70,22 @@ const CONFIDENCE_CONFIG = {
   HIGH: { 
     color: 'bg-emerald-100 text-emerald-700 border-emerald-200', 
     icon: '●',
-    tooltip: 'Высокое покрытие данных. Все ключевые источники доступны.'
+    tooltip: 'High data coverage. All key sources available.'
   },
   MEDIUM: { 
     color: 'bg-amber-100 text-amber-700 border-amber-200', 
     icon: '◐',
-    tooltip: 'Среднее покрытие данных. Некоторые источники могут отсутствовать.'
+    tooltip: 'Medium data coverage. Some sources may be missing.'
   },
   LOW: { 
     color: 'bg-orange-100 text-orange-700 border-orange-200', 
     icon: '○',
-    tooltip: 'Низкое покрытие данных. Ограниченная история транзакций.'
+    tooltip: 'Low data coverage. Limited transaction history.'
   },
   HIDDEN: { 
     color: 'bg-gray-100 text-gray-400 border-gray-200', 
     icon: '○',
-    tooltip: 'Минимальное покрытие данных. Сигнал не отправляется в Telegram.'
+    tooltip: 'Minimal data coverage. Signal not sent to Telegram.'
   }
 };
 
