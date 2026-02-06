@@ -135,10 +135,10 @@ interface GraphStateV1 {
 - [x] MongoDB connection
 - [x] Admin authentication
 
-### PHASE 1 - Twitter Score Core - In Progress
+### PHASE 1 - Twitter Score Core - COMPLETE ✅
 - [x] **1.1 Unified Twitter Score v1.0** - DONE
 - [x] **1.2 Audience Quality Engine v1.0** - DONE
-- [ ] **1.3 Handshakes / Social Distance** (hops engine)
+- [x] **1.3 Hops / Social Distance v1.0** - DONE
 
 ### PHASE 2 - Time & Behavior Analytics
 - [ ] 2.1 Time Series Storage (scaffold)
