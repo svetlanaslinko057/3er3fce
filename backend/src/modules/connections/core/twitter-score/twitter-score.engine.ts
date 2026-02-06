@@ -165,7 +165,7 @@ export function computeTwitterScore(input: TwitterScoreInput): TwitterScoreResul
     influence: influence01,
     quality: quality01,
     trend: trend01,
-    network_proxy: audienceQuality01,  // Now uses audience_quality when available
+    network_proxy: network01,  // Combined: audience_quality + authority_proximity
     consistency: consistency01,
     risk_penalty: 0,
   };
