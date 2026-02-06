@@ -55,12 +55,12 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
 const EarlySignalBadge = ({ badge }) => {
   const badges = {
     breakout: { 
-      label: 'Прорыв', 
+      label: 'Breakout', 
       emoji: '🚀', 
       className: 'bg-green-100 text-green-700 border-green-300 animate-pulse' 
     },
     rising: { 
-      label: 'Рост', 
+      label: 'Rising', 
       emoji: '📈', 
       className: 'bg-yellow-100 text-yellow-700 border-yellow-300' 
     },
@@ -111,10 +111,10 @@ const RiskIndicator = ({ level }) => {
 
 const TrendArrow = ({ state, velocity }) => {
   const configs = {
-    growing: { icon: '↗', color: 'text-green-500', label: 'Рост' },
-    cooling: { icon: '↘', color: 'text-red-500', label: 'Падение' },
-    volatile: { icon: '↕', color: 'text-yellow-500', label: 'Волатильность' },
-    stable: { icon: '→', color: 'text-gray-400', label: 'Стабильно' },
+    growing: { icon: '↗', color: 'text-green-500', label: 'Growing' },
+    cooling: { icon: '↘', color: 'text-red-500', label: 'Cooling' },
+    volatile: { icon: '↕', color: 'text-yellow-500', label: 'Volatile' },
+    stable: { icon: '→', color: 'text-gray-400', label: 'Stable' },
   };
   const config = configs[state] || configs.stable;
   return (
@@ -276,10 +276,10 @@ const EarlySignalRadar = ({ data, onSelect, selectedId, compareSelection = [] })
       </div>
 
       {/* Zone labels */}
-      <div className="absolute top-12 left-20 text-xs text-gray-500">Инертные</div>
+      <div className="absolute top-12 left-20 text-xs text-gray-500">Inert</div>
       <div className="absolute top-12 right-20 text-xs text-green-400 font-bold">🔥 Alpha Zone</div>
-      <div className="absolute bottom-16 left-20 text-xs text-gray-500">Шум</div>
-      <div className="absolute bottom-16 right-20 text-xs text-yellow-400">Разогрев</div>
+      <div className="absolute bottom-16 left-20 text-xs text-gray-500">Noise</div>
+      <div className="absolute bottom-16 right-20 text-xs text-yellow-400">Warming Up</div>
 
       <svg width={WIDTH} height={HEIGHT} className="mx-auto">
         {/* Grid */}
@@ -344,7 +344,7 @@ const EarlySignalRadar = ({ data, onSelect, selectedId, compareSelection = [] })
           fontSize={12}
           fontWeight={500}
         >
-          Acceleration (ускорение роста) →
+          Acceleration (growth rate) →
         </text>
 
         {/* Y-axis */}
@@ -719,7 +719,7 @@ const EarlySignalDetailsPanel = ({ account, onClose }) => {
                 : 'text-red-600'
             }`}>
               {account.influence_adjusted > account.influence_base ? '+' : ''}
-              {account.influence_adjusted - account.influence_base} от тренда
+              {account.influence_adjusted - account.influence_base} from trend
             </div>
           )}
         </div>
@@ -1049,7 +1049,7 @@ const ConnectionsEarlySignalPage = () => {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-gray-900">Early Signal Radar</h1>
-                <p className="text-sm text-gray-500">Кто может стать важным в ближайшее время</p>
+                <p className="text-sm text-gray-500">Who may become significant soon</p>
               </div>
             </div>
             
