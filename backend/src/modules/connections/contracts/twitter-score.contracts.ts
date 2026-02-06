@@ -48,6 +48,9 @@ export interface TwitterScoreInput {
 
   // Phase 1.2: Audience Quality (replaces network_proxy)
   audience_quality_score_0_1?: number;
+
+  // Phase 1.3: Hops / Authority Proximity
+  authority_proximity_score_0_1?: number;
 }
 
 /**
