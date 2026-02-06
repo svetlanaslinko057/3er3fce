@@ -132,17 +132,95 @@ export function validateGraphState(state: any): { valid: boolean; errors: string
     }
   }
   
-  // Selected nodes validation
-  if (state.selectedNodes && !Array.isArray(state.selectedNodes)) {
-    errors.push('selectedNodes must be an array');
+  // Selected nodes validation (support both field names)
+  const selectedNodes = state.selectedNodes || state.selected_nodes;
+  if (selectedNodes && !Array.isArray(selectedNodes)) {
+    errors.push('selectedNodes/selected_nodes must be an array');
+  }
+  
+  // Compare validation
+  if (state.compare && typeof state.compare === 'object') {
+    const left = state.compare.left || state.compare.nodeA;
+    const right = state.compare.right || state.compare.nodeB;
+    if (left && typeof left !== 'string') {
+      errors.push('compare.left must be a string');
+    }
+    if (right && typeof right !== 'string') {
+      errors.push('compare.right must be a string');
+    }
   }
   
   // View validation
-  if (state.view && !['graph', 'table'].includes(state.view)) {
-    errors.push('view must be "graph" or "table"');
+  if (state.view && !['graph', 'table', 'compare'].includes(state.view)) {
+    errors.push('view must be "graph", "table", or "compare"');
+  }
+  
+  // Sort validation
+  if (state.sort && typeof state.sort === 'object') {
+    if (state.sort.order && !['asc', 'desc'].includes(state.sort.order)) {
+      errors.push('sort.order must be "asc" or "desc"');
+    }
+  }
+  
+  // Focus validation
+  const focus = state.focus || state.highlight;
+  if (focus && typeof focus !== 'string') {
+    errors.push('focus/highlight must be a string');
   }
   
   return { valid: errors.length === 0, errors };
+}
+
+/**
+ * Normalize state - convert aliases to canonical form
+ */
+export function normalizeGraphState(state: Partial<GraphStateV1>): GraphStateV1 {
+  const normalized: GraphStateV1 = {
+    version: CURRENT_VERSION,
+  };
+  
+  // Filters
+  if (state.filters) {
+    normalized.filters = { ...state.filters };
+  }
+  
+  // Selected nodes (normalize to selected_nodes)
+  const selectedNodes = state.selected_nodes || state.selectedNodes;
+  if (selectedNodes?.length) {
+    normalized.selected_nodes = selectedNodes;
+  }
+  
+  // Compare (normalize to left/right)
+  if (state.compare) {
+    normalized.compare = {
+      left: state.compare.left || state.compare.nodeA,
+      right: state.compare.right || state.compare.nodeB,
+      active: state.compare.active,
+    };
+  }
+  
+  // View
+  if (state.view) {
+    normalized.view = state.view;
+  }
+  
+  // Sort (normalize to sort)
+  if (state.sort) {
+    normalized.sort = state.sort;
+  } else if (state.table) {
+    normalized.sort = {
+      field: state.table.sortBy,
+      order: state.table.order,
+    };
+  }
+  
+  // Focus (normalize to focus)
+  const focus = state.focus || state.highlight;
+  if (focus) {
+    normalized.focus = focus;
+  }
+  
+  return normalized;
 }
 
 /**
