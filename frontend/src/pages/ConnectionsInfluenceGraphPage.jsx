@@ -33,6 +33,79 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
 // GRAPH STATE HELPERS (P2.2)
 // ============================================================
 
+/**
+ * Build current graph state from UI
+ */
+const buildGraphState = (filters, selectedNode, compareState) => {
+  const state = {
+    version: '1.0',
+    filters: {
+      profiles: filters.profiles,
+      early_signal: filters.early_signal,
+      risk_level: filters.risk_level,
+      edge_strength: filters.edge_strength,
+      hide_isolated: filters.hide_isolated,
+      limit_nodes: filters.limit_nodes,
+    },
+    view: 'graph',
+  };
+  
+  // Selected nodes
+  if (selectedNode) {
+    state.selected_nodes = [selectedNode.id];
+    state.focus = selectedNode.id;
+  }
+  
+  // Compare mode
+  if (compareState?.nodeA && compareState?.nodeB) {
+    state.compare = {
+      left: compareState.nodeA,
+      right: compareState.nodeB,
+      active: true,
+    };
+    state.view = 'compare';
+  }
+  
+  return state;
+};
+
+/**
+ * Apply decoded state to UI
+ */
+const applyGraphState = (state, setFilters, setSelectedNode, graphNodes) => {
+  // Apply filters
+  if (state.filters) {
+    setFilters(prev => ({
+      ...prev,
+      profiles: state.filters.profiles || prev.profiles,
+      early_signal: state.filters.early_signal || prev.early_signal,
+      risk_level: state.filters.risk_level || prev.risk_level,
+      edge_strength: state.filters.edge_strength || prev.edge_strength,
+      hide_isolated: state.filters.hide_isolated ?? prev.hide_isolated,
+      limit_nodes: state.filters.limit_nodes || prev.limit_nodes,
+    }));
+  }
+  
+  // Apply focus/highlight
+  const focusId = state.focus || state.highlight;
+  if (focusId && graphNodes?.length) {
+    const node = graphNodes.find(n => n.id === focusId);
+    if (node) {
+      setSelectedNode(node);
+    }
+  }
+  
+  // Return compare state if present
+  if (state.compare?.active || (state.compare?.left && state.compare?.right)) {
+    return {
+      nodeA: state.compare.left || state.compare.nodeA,
+      nodeB: state.compare.right || state.compare.nodeB,
+    };
+  }
+  
+  return null;
+};
+
 const encodeState = async (state) => {
   try {
     const res = await fetch(`${BACKEND_URL}/api/connections/graph/state/encode`, {
