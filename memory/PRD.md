@@ -105,15 +105,24 @@ interface GraphStateV1 {
 - [x] MongoDB connection
 - [x] Admin authentication
 
-### P1 (High Priority) - Pending
-- [ ] Twitter API integration (live data)
-- [ ] Alert delivery (Telegram/Discord)
+### PHASE 1 - Twitter Score Core - In Progress
+- [x] **1.1 Unified Twitter Score v1.0** - DONE
+- [ ] **1.2 Audience Quality Engine** (smart followers, tier-1, bot share)
+- [ ] **1.3 Handshakes / Social Distance** (hops engine)
 
-### P2 (Medium Priority) - In Progress
+### PHASE 2 - Time & Behavior Analytics
+- [ ] 2.1 Time Series Storage (scaffold)
+- [ ] 2.2 Charts & Timelines UI
+
+### PHASE 3 - AI Intelligence Layer
+- [ ] 3.1 AI Summary Engine (LLM analysis)
+
+### P2 (Medium Priority) - Done
 - [x] P2.2 Share Graph State
-- [ ] ML-enhanced scoring
-- [ ] Reddit Module
-- [ ] News Module
+
+### Future
+- [ ] Twitter API Integration (after Phase 1 complete)
+- [ ] Reddit/News Modules
 
 ## Credentials
 - Admin: `admin` / `admin12345`
