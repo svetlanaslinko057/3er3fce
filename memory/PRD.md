@@ -82,6 +82,23 @@
   - Admin config for weights and thresholds
   - API: /api/connections/audience-quality/*
 
+- **2026-02-06**: **PHASE 1.3 - Hops / Social Distance Engine v1.0**
+  - BFS shortest path algorithm (1-3 hops)
+  - Authority proximity score calculation
+  - Components:
+    - hop_weight: {1: 1.0, 2: 0.65, 3: 0.40}
+    - strength_weight: 0.35 (path bottleneck contribution)
+  - Summary includes:
+    - reachable_top_nodes
+    - min_hops_to_any_top
+    - closest_top_targets (with hops + strength)
+    - authority_proximity_score_0_1
+  - Integrated into Twitter Score:
+    - network = 0.65*audience_quality + 0.35*authority_proximity
+  - Explain layer: "2 hops to whale_alpha"
+  - Admin config for scoring/confidence
+  - API: /api/connections/hops/*
+
 ## P2.2 Share Graph State - Contract
 
 ### GraphState v1 Schema
