@@ -235,11 +235,12 @@ function ForceGraphCore({
       onLinkHover={handleLinkHover}
       onBackgroundClick={handleBackgroundClick}
       
-      // Physics
-      warmupTicks={80}
-      cooldownTicks={140}
-      d3VelocityDecay={0.25}
-      d3AlphaDecay={0.02}
+      // Physics - STATIC GRAPH (no continuous simulation)
+      warmupTicks={100}
+      cooldownTicks={0}         // Stop simulation immediately after warmup
+      cooldownTime={0}          // No cooldown time
+      d3VelocityDecay={0.6}     // Fast decay
+      d3AlphaDecay={0.1}        // Fast stabilization
     />
   );
 }
