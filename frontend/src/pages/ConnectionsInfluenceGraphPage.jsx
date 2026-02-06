@@ -710,20 +710,200 @@ export default function ConnectionsInfluenceGraphPage() {
 
       {/* Compare Modal */}
       {showCompareModal && compareNode && (
-        <CompareModal
-          accountA={compareNode.id}
-          accountB={null}
+        <GraphCompareWrapper
+          nodeA={compareNode}
+          allNodes={graphData.nodes}
           onClose={() => {
             setShowCompareModal(false);
             setCompareNode(null);
           }}
-          availableAccounts={graphData.nodes.map(n => ({
-            id: n.id,
-            handle: n.handle,
-            display_name: n.label,
-          }))}
         />
       )}
     </div>
   );
 }
+
+// ============================================================
+// GRAPH COMPARE WRAPPER
+// ============================================================
+
+const GraphCompareWrapper = ({ nodeA, allNodes, onClose }) => {
+  const [selectedB, setSelectedB] = useState(null);
+  const [accountA, setAccountA] = useState(null);
+  const [accountB, setAccountB] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  // Filter out current node from options
+  const availableNodes = allNodes.filter(n => n.id !== nodeA?.id);
+
+  // Fetch account details when selection changes
+  useEffect(() => {
+    if (!nodeA) return;
+    // Create account object from node
+    setAccountA({
+      id: nodeA.id,
+      handle: nodeA.handle || nodeA.label,
+      display_name: nodeA.label || nodeA.displayName,
+      influence_base: nodeA.influence_score || 0,
+      influence_adjusted: nodeA.influence_score || 0,
+      profile: nodeA.profile,
+      risk_level: nodeA.risk_level,
+      early_signal: { badge: nodeA.early_signal || 'none', score: 0 },
+      trend: { velocity_norm: 0, acceleration_norm: 0, state: 'stable' },
+    });
+  }, [nodeA]);
+
+  const handleSelectB = async (nodeB) => {
+    setSelectedB(nodeB.id);
+    setLoading(true);
+    try {
+      // Fetch full account data from API if available
+      const res = await fetch(`${BACKEND_URL}/api/connections/graph/node/${nodeB.id}`);
+      const data = await res.json();
+      
+      setAccountB({
+        id: nodeB.id,
+        handle: nodeB.handle || nodeB.label,
+        display_name: nodeB.label || nodeB.displayName,
+        influence_base: nodeB.influence_score || data?.data?.influence_score || 0,
+        influence_adjusted: nodeB.influence_score || 0,
+        profile: nodeB.profile,
+        risk_level: nodeB.risk_level,
+        early_signal: { badge: nodeB.early_signal || 'none', score: 0 },
+        trend: { velocity_norm: 0, acceleration_norm: 0, state: 'stable' },
+      });
+    } catch (e) {
+      // Fallback to node data
+      setAccountB({
+        id: nodeB.id,
+        handle: nodeB.handle || nodeB.label,
+        display_name: nodeB.label || nodeB.displayName,
+        influence_base: nodeB.influence_score || 0,
+        influence_adjusted: nodeB.influence_score || 0,
+        profile: nodeB.profile,
+        risk_level: nodeB.risk_level,
+        early_signal: { badge: nodeB.early_signal || 'none', score: 0 },
+        trend: { velocity_norm: 0, acceleration_norm: 0, state: 'stable' },
+      });
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-2xl">
+          <div className="flex items-center gap-3">
+            <Scale className="w-6 h-6 text-blue-500" />
+            <h2 className="text-xl font-bold text-gray-900">Compare Accounts</h2>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+            <X className="w-5 h-5 text-gray-400" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-6">
+          {/* Account A (Selected) */}
+          <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+            <div className="text-xs text-blue-600 font-medium mb-2">Account A (Selected)</div>
+            <div className="flex items-center gap-3">
+              <div 
+                className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
+                style={{ backgroundColor: nodeA?.color || '#3b82f6' }}
+              >
+                {nodeA?.label?.charAt(0) || '?'}
+              </div>
+              <div>
+                <div className="font-semibold text-gray-900">{nodeA?.label}</div>
+                <div className="text-sm text-gray-500">Score: {nodeA?.influence_score}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Select Account B */}
+          <div>
+            <div className="text-sm font-medium text-gray-700 mb-3">Select Account to Compare</div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-64 overflow-y-auto">
+              {availableNodes.slice(0, 20).map(node => (
+                <button
+                  key={node.id}
+                  onClick={() => handleSelectB(node)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all text-left ${
+                    selectedB === node.id
+                      ? 'border-green-500 bg-green-50'
+                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  <div 
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                    style={{ backgroundColor: node.color || '#64748b' }}
+                  >
+                    {node.label?.charAt(0) || '?'}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium text-gray-900 truncate">{node.label}</div>
+                    <div className="text-xs text-gray-500">{node.influence_score}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Comparison Result */}
+          {accountA && accountB && !loading && (
+            <div className="border-t pt-6">
+              <h3 className="font-semibold text-gray-900 mb-4">Comparison Result</h3>
+              <div className="grid grid-cols-2 gap-6">
+                {/* Account A */}
+                <div className={`p-4 rounded-xl border-2 ${
+                  accountA.influence_base > accountB.influence_base ? 'border-green-500 bg-green-50' : 'border-gray-200'
+                }`}>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-gray-900">{accountA.influence_base}</div>
+                    <div className="text-sm text-gray-500">{accountA.display_name}</div>
+                    {accountA.influence_base > accountB.influence_base && (
+                      <span className="inline-block mt-2 px-2 py-1 bg-green-500 text-white text-xs font-bold rounded">WINNER</span>
+                    )}
+                  </div>
+                </div>
+                {/* Account B */}
+                <div className={`p-4 rounded-xl border-2 ${
+                  accountB.influence_base > accountA.influence_base ? 'border-green-500 bg-green-50' : 'border-gray-200'
+                }`}>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-gray-900">{accountB.influence_base}</div>
+                    <div className="text-sm text-gray-500">{accountB.display_name}</div>
+                    {accountB.influence_base > accountA.influence_base && (
+                      <span className="inline-block mt-2 px-2 py-1 bg-green-500 text-white text-xs font-bold rounded">WINNER</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Verdict */}
+              <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                <div className="text-sm text-gray-700">
+                  {accountA.influence_base > accountB.influence_base ? (
+                    <><strong>{accountA.display_name}</strong> has stronger influence (+{accountA.influence_base - accountB.influence_base} points)</>
+                  ) : accountB.influence_base > accountA.influence_base ? (
+                    <><strong>{accountB.display_name}</strong> has stronger influence (+{accountB.influence_base - accountA.influence_base} points)</>
+                  ) : (
+                    <>Both accounts have equal influence</>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {loading && (
+            <div className="text-center py-8">
+              <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-500 rounded-full animate-spin mx-auto mb-3" />
+              <p className="text-gray-500">Loading comparison...</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
