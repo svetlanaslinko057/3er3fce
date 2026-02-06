@@ -77,7 +77,7 @@ export function registerGraphStateRoutes(app: FastifyInstance): void {
   // POST /api/connections/graph/state/decode
   // Decode string back to state
   // ============================================================
-  app.post('/api/connections/graph/state/decode', async (
+  app.post('/graph/state/decode', async (
     req: FastifyRequest<{ Body: DecodeBody }>,
     reply: FastifyReply
   ) => {
