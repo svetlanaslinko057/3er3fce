@@ -1492,3 +1492,168 @@ PUBLIC_BASE_URL=https://svetlana-connect.preview.emergentagent.com
 *Документация Phase 2.3 создана: 2026-02-06*
 *Версия: 1.0.0*
 *Автор: Emergent AI Assistant*
+
+---
+
+# 12. Twitter Score Core (Phase 1)
+
+## 12.1 Overview
+
+Phase 1 реализует ядро интеллектуального слоя — систему оценки, не зависящую от Twitter API, но архитектурно готовую к нему.
+
+> **Принцип:** Сначала строим мозг, потом подключаем источники данных.
+
+## 12.2 Unified Twitter Score (Phase 1.1)
+
+Единый рейтинг 0-1000 (как "кредитный рейтинг" Twitter-аккаунта).
+
+### Формула
+
+```
+Score = Σ(component × weight) × (1 - penalty)
+
+Components:
+├── influence (35%)
+├── quality (20%)
+├── trend (20%)
+├── network (15%) = audience_quality + authority_proximity
+└── consistency (10%)
+```
+
+### Grades
+
+| Grade | Score | Description |
+|-------|-------|-------------|
+| **S** | 850+ | Top-tier |
+| **A** | 700+ | Strong |
+| **B** | 550+ | Good |
+| **C** | 400+ | Average |
+| **D** | <400 | High risk |
+
+### Confidence
+
+- **HIGH** — все ключевые метрики доступны
+- **MED** — частичные данные
+- **LOW** — недостаточно данных
+
+## 12.3 Audience Quality Engine (Phase 1.2)
+
+Оценка качества аудитории через proxy-сигналы.
+
+### Components
+
+| Component | Weight | Description |
+|-----------|--------|-------------|
+| purity | 45% | Чистота (low overlap + low bot risk) |
+| smart_followers_proxy | 30% | Proxy для smart followers |
+| signal_quality | 15% | x_score + signal/noise |
+| consistency | 10% | Поведенческая стабильность |
+
+### Bot Risk Detection
+
+```
+bot_risk = Σ(red_flag_penalties)
+
+Penalties:
+├── AUDIENCE_OVERLAP: 20%
+├── BOT_LIKE_PATTERN: 30%
+├── REPOST_FARM: 25%
+├── VIRAL_SPIKE: 10%
+└── LIKE_HEAVY: 10%
+```
+
+## 12.4 Hops / Social Distance (Phase 1.3)
+
+BFS shortest path для понимания социальной дистанции.
+
+### Concept
+
+> "Через сколько рукопожатий до сильных узлов?"
+
+### Algorithm
+
+1. BFS от account_id
+2. Поиск путей до top nodes (max 1-3 hops)
+3. Учёт strength рёбер (bottleneck)
+4. Расчёт authority_proximity_score
+
+### Output
+
+```json
+{
+  "reachable_top_nodes": 3,
+  "min_hops_to_any_top": 2,
+  "closest_top_targets": [
+    { "target_id": "whale", "hops": 2 }
+  ],
+  "authority_proximity_score_0_1": 0.48
+}
+```
+
+## 12.5 Integration
+
+Twitter Score использует результаты всех фаз:
+
+```
+network_proxy = 0.65 × audience_quality + 0.35 × authority_proximity
+```
+
+## 12.6 Documentation
+
+> 📘 Полная документация: [TWITTER_SCORE_CORE.md](./TWITTER_SCORE_CORE.md)
+
+---
+
+# 13. Graph State Share (Phase 2.2)
+
+## 13.1 Concept
+
+Любое состояние `/connections/graph` можно открыть по ссылке:
+
+```
+/connections/graph?state=BASE64_STRING
+```
+
+## 13.2 GraphState v1 Schema
+
+```typescript
+interface GraphStateV1 {
+  version: "1.0";
+  filters?: {
+    profiles?: string[];
+    early_signal?: string[];
+    risk_level?: string[];
+  };
+  selected_nodes?: string[];
+  compare?: { left: string; right: string } | null;
+  view?: "graph" | "table" | "compare";
+  focus?: string;
+}
+```
+
+## 13.3 Features
+
+- ✅ URL sync с replaceState (Back/Forward работают)
+- ✅ Share button с clipboard copy
+- ✅ Telegram links с Open in Graph
+- ✅ Admin toggle для Graph Share
+
+## 13.4 Usage
+
+### Encode
+```bash
+curl -X POST "/api/connections/graph/state/encode" \
+  -d '{"state": {"version": "1.0", "filters": {...}}}'
+# Returns: {"state": "eyJ2ZXJz..."}
+```
+
+### Share URL
+```
+https://site.com/connections/graph?state=eyJ2ZXJz...
+```
+
+---
+
+*Документация обновлена: 2026-02-06*
+*Версия модуля: 2.0.0 (Phase 1 + 2 complete)*
+
