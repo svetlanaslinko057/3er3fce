@@ -23,6 +23,73 @@ import CompareModal from '../components/connections/CompareModal';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || '';
 
 // ============================================================
+// SUGGESTIONS PANEL ("Explore suggestions")
+// ============================================================
+
+const SuggestionsPanel = ({ onSelect, selectedId }) => {
+  const [suggestions, setSuggestions] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`${BACKEND_URL}/api/connections/graph/suggestions`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.ok) setSuggestions(data.suggestions || []);
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return null;
+  if (!suggestions.length) return null;
+
+  const reasonLabels = {
+    top_influence: 'Top Influencer',
+    breakout: 'Breakout Signal',
+    rising: 'Rising Star',
+    high_connections: 'Well Connected',
+  };
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-yellow-500" />
+          Explore Suggestions
+        </h3>
+        <span className="text-xs text-gray-400">{suggestions.length} suggested</span>
+      </div>
+      <div className="flex gap-2 overflow-x-auto pb-2">
+        {suggestions.slice(0, 6).map(s => (
+          <button
+            key={s.id}
+            onClick={() => onSelect(s.id)}
+            className={`flex-shrink-0 px-3 py-2 rounded-lg border transition-all ${
+              selectedId === s.id
+                ? 'border-blue-500 bg-blue-50'
+                : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold ${
+                s.badge === 'breakout' ? 'bg-green-500' :
+                s.badge === 'rising' ? 'bg-yellow-500' : 'bg-gray-400'
+              }`}>
+                {s.display_name?.charAt(0) || '?'}
+              </div>
+              <div className="text-left">
+                <div className="text-sm font-medium text-gray-900 truncate max-w-24">{s.display_name}</div>
+                <div className="text-xs text-gray-500">{reasonLabels[s.reason] || s.reason}</div>
+              </div>
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// ============================================================
 // FILTER PANEL
 // ============================================================
 
