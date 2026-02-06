@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Connections Dropdown Testing - Backend API Testing
-Tests backend APIs for Connections dropdown functionality: Influencers and Graph tabs
+Twitter Score v1.0 Backend API Testing
+Tests the unified Twitter Score layer APIs for Phase 1.1
 """
 
 import requests
@@ -14,7 +14,7 @@ from typing import Dict, List, Optional, Any
 # Use production URL from frontend .env
 BACKEND_URL = "https://isolated-model.preview.emergentagent.com"
 
-class ConnectionsDropdownTester:
+class TwitterScoreTester:
     def __init__(self):
         self.base_url = BACKEND_URL
         self.tests_run = 0
@@ -66,558 +66,542 @@ class ConnectionsDropdownTester:
             response = self.session.get(f"{self.base_url}/api/connections/health")
             if response.status_code == 200:
                 data = response.json()
-                # Check for module healthy status
                 return data.get('ok') is True and data.get('module') == 'connections'
             return False
         except Exception as e:
             self.log(f"Connections health check failed: {e}")
             return False
     
-    def test_connections_accounts_api(self) -> bool:
-        """Test /api/connections/accounts for Influencers tab"""
-        try:
-            response = self.session.get(f"{self.base_url}/api/connections/accounts?limit=100")
-            if response.status_code == 200:
-                data = response.json()
-                if data.get('ok') and 'data' in data:
-                    accounts_data = data['data']
-                    # Check for accounts structure
-                    has_items = 'items' in accounts_data and isinstance(accounts_data['items'], list)
-                    
-                    items_count = len(accounts_data.get('items', []))
-                    self.log(f"Connections accounts: {items_count} accounts")
-                    
-                    # Check account structure if we have items
-                    if items_count > 0:
-                        first_account = accounts_data['items'][0]
-                        required_fields = ['author_id', 'handle', 'scores']
-                        has_required = all(field in first_account for field in required_fields)
-                        return has_items and has_required
-                    
-                    return has_items  # Even if no items, structure should be correct
-            return False
-        except Exception as e:
-            self.log(f"Connections accounts API test failed: {e}")
-            return False
-    
-    def test_connections_graph_api(self) -> bool:
-        """Test /api/connections/graph for Graph tab - should return 30 nodes and 400+ edges"""
-        try:
-            # Test POST with limit_nodes parameter
-            filters = {"limit_nodes": 50}
-            response = self.session.post(
-                f"{self.base_url}/api/connections/graph",
-                json=filters,
-                headers={'Content-Type': 'application/json'}
-            )
-            if response.status_code == 200:
-                data = response.json()
-                if data.get('ok'):
-                    # Check for required graph structure - could be in 'data' or directly in response
-                    graph_data = data.get('data', data)
-                    has_nodes = 'nodes' in graph_data and isinstance(graph_data['nodes'], list)
-                    has_edges = 'edges' in graph_data and isinstance(graph_data['edges'], list)
-                    
-                    # Check if we have reasonable amount of data
-                    nodes_count = len(graph_data.get('nodes', []))
-                    edges_count = len(graph_data.get('edges', []))
-                    
-                    self.log(f"Graph API POST: {nodes_count} nodes, {edges_count} edges")
-                    
-                    # Should have around 30 nodes and 400+ edges as specified
-                    nodes_ok = nodes_count >= 20  # Allow some flexibility
-                    edges_ok = edges_count >= 100  # Allow some flexibility for 400+ target
-                    
-                    # Check node structure if we have nodes
-                    if nodes_count > 0:
-                        first_node = graph_data['nodes'][0]
-                        node_fields = ['id', 'handle', 'influence_score']
-                        has_node_structure = all(field in first_node for field in node_fields)
-                    else:
-                        has_node_structure = True  # No nodes to check
-                    
-                    # Check edge structure if we have edges
-                    if edges_count > 0:
-                        first_edge = graph_data['edges'][0]
-                        edge_fields = ['id', 'source', 'target', 'weight']
-                        has_edge_structure = all(field in first_edge for field in edge_fields)
-                    else:
-                        has_edge_structure = True  # No edges to check
-                    
-                    return has_nodes and has_edges and nodes_ok and edges_ok and has_node_structure and has_edge_structure
-            return False
-        except Exception as e:
-            self.log(f"Connections Graph API test failed: {e}")
-            return False
-    
-    def test_connections_compare_api(self) -> bool:
-        """Test /api/connections/compare for Compare functionality"""
-        try:
-            # First get some real handles from the accounts API
-            accounts_response = self.session.get(f"{self.base_url}/api/connections/accounts?limit=5")
-            if accounts_response.status_code == 200:
-                accounts_data = accounts_response.json()
-                if accounts_data.get('ok') and 'data' in accounts_data:
-                    items = accounts_data['data'].get('items', [])
-                    if len(items) >= 2:
-                        # Use real handles
-                        left_handle = items[0].get('handle')
-                        right_handle = items[1].get('handle')
-                    else:
-                        # Fallback to mock handles from graph
-                        left_handle = "crypto_alpha"
-                        right_handle = "defi_hunter"
-                else:
-                    # Fallback to mock handles
-                    left_handle = "crypto_alpha"
-                    right_handle = "defi_hunter"
-            else:
-                # Fallback to mock handles
-                left_handle = "crypto_alpha"
-                right_handle = "defi_hunter"
-            
-            # Test compare with real data
-            compare_data = {
-                "left": left_handle,
-                "right": right_handle
-            }
-            response = self.session.post(
-                f"{self.base_url}/api/connections/compare",
-                json=compare_data,
-                headers={'Content-Type': 'application/json'}
-            )
-            if response.status_code == 200:
-                data = response.json()
-                if data.get('ok') and 'data' in data:
-                    compare_result = data['data']
-                    # Check for compare structure
-                    required_fields = ['left', 'right', 'audience_overlap']
-                    has_required = all(field in compare_result for field in required_fields)
-                    
-                    # Check audience overlap structure
-                    if 'audience_overlap' in compare_result:
-                        overlap = compare_result['audience_overlap']
-                        overlap_fields = ['a_to_b', 'b_to_a', 'shared_users', 'jaccard_similarity']
-                        has_overlap_structure = all(field in overlap for field in overlap_fields)
-                        self.log(f"Compare result: {left_handle} vs {right_handle}, jaccard={overlap.get('jaccard_similarity', 0):.3f}")
-                        return has_required and has_overlap_structure
-                    
-                    return has_required
-            return False
-        except Exception as e:
-            self.log(f"Connections Compare API test failed: {e}")
-            return False
-    
-    def test_connections_graph_get(self) -> bool:
-        """Test GET /api/connections/graph returns nodes and edges"""
-        try:
-            response = self.session.get(f"{self.base_url}/api/connections/graph")
-            if response.status_code == 200:
-                data = response.json()
-                if data.get('ok'):
-                    # Check for required graph structure - could be in 'data' or directly in response
-                    graph_data = data.get('data', data)
-                    has_nodes = 'nodes' in graph_data and isinstance(graph_data['nodes'], list)
-                    has_edges = 'edges' in graph_data and isinstance(graph_data['edges'], list)
-                    
-                    # Check if we have reasonable amount of data
-                    nodes_count = len(graph_data.get('nodes', []))
-                    edges_count = len(graph_data.get('edges', []))
-                    
-                    self.log(f"Graph GET: {nodes_count} nodes, {edges_count} edges")
-                    return has_nodes and has_edges and nodes_count > 0
-            return False
-        except Exception as e:
-            self.log(f"Connections Graph GET test failed: {e}")
-            return False
-    
-    def test_mock_score_api(self) -> bool:
-        """Test /api/connections/score/mock returns valid data"""
-        try:
-            response = self.session.get(f"{self.base_url}/api/connections/score/mock")
-            if response.status_code == 200:
-                data = response.json()
-                if data.get('ok') and 'data' in data:
-                    score_data = data['data']
-                    # Check for score structure
-                    required_fields = ['influence_score', 'risk_level']
-                    has_required = all(field in score_data for field in required_fields)
-                    self.log(f"Mock score: influence={score_data.get('influence_score')}, risk={score_data.get('risk_level')}")
-                    return has_required
-            return False
-        except Exception as e:
-            self.log(f"Mock score API test failed: {e}")
-            return False
-    
-    def test_mock_early_signal_api(self) -> bool:
-        """Test /api/connections/early-signal/mock returns breakout data"""
-        try:
-            response = self.session.get(f"{self.base_url}/api/connections/early-signal/mock")
-            if response.status_code == 200:
-                data = response.json()
-                if data.get('ok') and 'data' in data:
-                    signal_data = data['data']
-                    # Check for early signal structure
-                    required_fields = ['early_signal_score', 'badge', 'confidence']
-                    has_required = all(field in signal_data for field in required_fields)
-                    self.log(f"Mock early signal: score={signal_data.get('early_signal_score')}, badge={signal_data.get('badge')}")
-                    return has_required
-            return False
-        except Exception as e:
-            self.log(f"Mock early signal API test failed: {e}")
-            return False
-    
-    def test_admin_login_api(self) -> bool:
-        """Test /api/admin/auth/login with admin/admin12345"""
-        try:
-            login_data = {
-                "username": "admin",
-                "password": "admin12345"
-            }
-            response = self.session.post(
-                f"{self.base_url}/api/admin/auth/login",
-                json=login_data,
-                headers={'Content-Type': 'application/json'}
-            )
-            if response.status_code == 200:
-                data = response.json()
-                if data.get('ok') and 'token' in data:
-                    self.admin_token = data['token']
-                    self.log(f"Admin login successful, token received")
-                    return True
-            return False
-        except Exception as e:
-            self.log(f"Admin login API test failed: {e}")
-            return False
-    
-    def test_admin_connections_overview(self) -> bool:
-        """Test /api/admin/connections/overview (requires auth)"""
-        try:
-            if not hasattr(self, 'admin_token'):
-                self.log("No admin token available, skipping overview test")
-                return False
-                
-            headers = {
-                'Authorization': f'Bearer {self.admin_token}',
-                'Content-Type': 'application/json'
-            }
-            response = self.session.get(f"{self.base_url}/api/admin/connections/overview", headers=headers)
-            if response.status_code == 200:
-                data = response.json()
-                if data.get('ok') and 'data' in data:
-                    overview_data = data['data']
-                    # Check for overview structure
-                    expected_fields = ['enabled', 'health', 'stats']
-                    has_required = all(field in overview_data for field in expected_fields)
-                    self.log(f"Admin overview: enabled={overview_data.get('enabled')}, health={overview_data.get('health', {}).get('status')}")
-                    return has_required
-            return False
-        except Exception as e:
-            self.log(f"Admin connections overview test failed: {e}")
-            return False
-    
-    def test_graph_suggestions_api(self) -> bool:
-        """Test /api/connections/graph/suggestions returns 5 recommendations"""
-        try:
-            response = self.session.get(f"{self.base_url}/api/connections/graph/suggestions")
-            if response.status_code == 200:
-                data = response.json()
-                if data.get('ok') and 'suggestions' in data:
-                    suggestions = data['suggestions']
-                    if isinstance(suggestions, list) and len(suggestions) >= 5:
-                        # Check suggestion structure
-                        first_suggestion = suggestions[0]
-                        required_fields = ['id', 'display_name', 'reason', 'badge']
-                        has_structure = all(field in first_suggestion for field in required_fields)
-                        self.log(f"Graph suggestions: {len(suggestions)} suggestions, first: {first_suggestion.get('display_name')} ({first_suggestion.get('reason')})")
-                        return has_structure
-            return False
-        except Exception as e:
-            self.log(f"Graph suggestions API test failed: {e}")
-            return False
-    
-    def test_graph_ranking_api(self) -> bool:
-        """Test /api/connections/graph/ranking returns top 20 accounts"""
-        try:
-            response = self.session.get(f"{self.base_url}/api/connections/graph/ranking?limit=20")
-            if response.status_code == 200:
-                data = response.json()
-                if data.get('ok') and 'data' in data:
-                    ranking_data = data['data']
-                    if 'items' in ranking_data and isinstance(ranking_data['items'], list):
-                        items = ranking_data['items']
-                        if len(items) > 0:
-                            # Check ranking item structure
-                            first_item = items[0]
-                            required_fields = ['id', 'label', 'score', 'early_signal']
-                            has_structure = all(field in first_item for field in required_fields)
-                            self.log(f"Graph ranking: {len(items)} accounts, top: {first_item.get('label')} (score: {first_item.get('score')})")
-                            return has_structure
-                        else:
-                            self.log("Graph ranking: empty items list")
-                            return True  # Empty is acceptable
-            return False
-        except Exception as e:
-            self.log(f"Graph ranking API test failed: {e}")
-            return False
-    
-    def test_graph_node_details_api(self) -> bool:
-        """Test /api/connections/graph/node/{id} returns node details"""
-        try:
-            # First get a node ID from the graph API
-            graph_response = self.session.get(f"{self.base_url}/api/connections/graph")
-            if graph_response.status_code == 200:
-                graph_data = graph_response.json()
-                if graph_data.get('ok'):
-                    nodes = graph_data.get('nodes', [])
-                    if len(nodes) > 0:
-                        node_id = nodes[0].get('id')
-                        if node_id:
-                            # Test node details API
-                            response = self.session.get(f"{self.base_url}/api/connections/graph/node/{node_id}")
-                            if response.status_code == 200:
-                                data = response.json()
-                                if data.get('ok') and 'data' in data:
-                                    node_details = data['data']
-                                    # Check for node details structure
-                                    expected_fields = ['connected_nodes']
-                                    # connected_nodes is optional, so just check if response is valid
-                                    self.log(f"Node details for {node_id}: {len(node_details.get('connected_nodes', []))} connections")
-                                    return True
-                            return False
-            return False
-        except Exception as e:
-            self.log(f"Graph node details API test failed: {e}")
-            return False
-    
     # ============================================================
-    # P2.2: GRAPH STATE SHARING API TESTS
+    # TWITTER SCORE API TESTS - Phase 1.1
     # ============================================================
     
-    def test_graph_state_info_api(self) -> bool:
-        """Test GET /api/connections/graph/state/info returns version info"""
+    def test_twitter_score_info_api(self) -> bool:
+        """Test GET /api/connections/twitter-score/info - should return version, weights, grades, penalties"""
         try:
-            response = self.session.get(f"{self.base_url}/api/connections/graph/state/info")
+            response = self.session.get(f"{self.base_url}/api/connections/twitter-score/info")
             if response.status_code == 200:
                 data = response.json()
                 if data.get('ok') and 'data' in data:
                     info_data = data['data']
-                    # Check for required version info fields
-                    required_fields = ['currentVersion', 'supportedVersions', 'features', 'encoding', 'maxLength']
+                    
+                    # Check required fields
+                    required_fields = ['version', 'weights', 'grades', 'penalties', 'components']
                     has_required = all(field in info_data for field in required_fields)
                     
-                    # Validate specific values
-                    version_ok = info_data.get('currentVersion') == '1.0'
-                    encoding_ok = info_data.get('encoding') == 'base64-url-safe'
-                    features_ok = isinstance(info_data.get('features'), dict)
+                    # Validate version
+                    version_ok = info_data.get('version') == '1.0.0'
                     
-                    self.log(f"Graph state info: version={info_data.get('currentVersion')}, encoding={info_data.get('encoding')}")
-                    return has_required and version_ok and encoding_ok and features_ok
+                    # Validate weights structure
+                    weights = info_data.get('weights', {})
+                    expected_weights = ['influence', 'quality', 'trend', 'network_proxy', 'consistency']
+                    has_weights = all(weight in weights for weight in expected_weights)
+                    
+                    # Check weight values (should sum to 1.0 based on config: 35%, 20%, 20%, 15%, 10%)
+                    weight_sum = sum(weights.values()) if has_weights else 0
+                    weight_sum_ok = abs(weight_sum - 1.0) < 0.01
+                    
+                    # Validate grades structure
+                    grades = info_data.get('grades', [])
+                    grade_names = [g.get('grade') for g in grades]
+                    has_all_grades = all(grade in grade_names for grade in ['S', 'A', 'B', 'C', 'D'])
+                    
+                    # Validate penalties structure
+                    penalties = info_data.get('penalties', {})
+                    penalties_ok = all(key in penalties for key in ['risk_levels', 'red_flags', 'max_penalty'])
+                    
+                    self.log(f"Twitter Score Info: version={info_data.get('version')}, weights_sum={weight_sum:.2f}, grades={len(grades)}")
+                    return has_required and version_ok and has_weights and weight_sum_ok and has_all_grades and penalties_ok
             return False
         except Exception as e:
-            self.log(f"Graph state info API test failed: {e}")
+            self.log(f"Twitter Score Info API test failed: {e}")
             return False
     
-    def test_graph_state_encode_api(self) -> bool:
-        """Test POST /api/connections/graph/state/encode encodes filters and highlight"""
+    def test_twitter_score_mock_api(self) -> bool:
+        """Test GET /api/connections/twitter-score/mock - should return examples with different grades"""
         try:
-            # Test state with filters and highlight
-            test_state = {
-                "version": "1.0",
-                "filters": {
-                    "profiles": ["retail", "influencer"],
-                    "early_signal": ["breakout"],
-                    "limit_nodes": 30
-                },
-                "highlight": "test_node_123"
-            }
-            
-            response = self.session.post(
-                f"{self.base_url}/api/connections/graph/state/encode",
-                json={"state": test_state},
-                headers={'Content-Type': 'application/json'}
-            )
-            
+            response = self.session.get(f"{self.base_url}/api/connections/twitter-score/mock")
             if response.status_code == 200:
                 data = response.json()
                 if data.get('ok') and 'data' in data:
-                    encode_data = data['data']
-                    # Check for required encode response fields
-                    required_fields = ['encoded', 'length', 'version']
-                    has_required = all(field in encode_data for field in required_fields)
+                    mock_data = data['data']
                     
-                    # Validate encoded string
-                    encoded = encode_data.get('encoded', '')
-                    encoded_ok = isinstance(encoded, str) and len(encoded) > 0
+                    # Check for required structure
+                    required_fields = ['version', 'description', 'results', 'grade_distribution']
+                    has_required = all(field in mock_data for field in required_fields)
                     
-                    # Check it's URL-safe (no +, /, =)
-                    url_safe = '+' not in encoded and '/' not in encoded and '=' not in encoded
+                    results = mock_data.get('results', [])
+                    results_ok = len(results) >= 3  # Should have multiple examples
                     
-                    self.log(f"Graph state encode: length={encode_data.get('length')}, url_safe={url_safe}")
-                    return has_required and encoded_ok and url_safe
-            return False
-        except Exception as e:
-            self.log(f"Graph state encode API test failed: {e}")
-            return False
-    
-    def test_graph_state_decode_api(self) -> bool:
-        """Test POST /api/connections/graph/state/decode decodes base64 state correctly"""
-        try:
-            # First encode a state to get a valid encoded string
-            test_state = {
-                "version": "1.0",
-                "filters": {
-                    "profiles": ["whale"],
-                    "limit_nodes": 25
-                },
-                "highlight": "decode_test_node"
-            }
-            
-            # Encode first
-            encode_response = self.session.post(
-                f"{self.base_url}/api/connections/graph/state/encode",
-                json={"state": test_state},
-                headers={'Content-Type': 'application/json'}
-            )
-            
-            if encode_response.status_code == 200:
-                encode_data = encode_response.json()
-                if encode_data.get('ok') and 'data' in encode_data:
-                    encoded_string = encode_data['data'].get('encoded')
-                    
-                    if encoded_string:
-                        # Now test decode
-                        decode_response = self.session.post(
-                            f"{self.base_url}/api/connections/graph/state/decode",
-                            json={"encoded": encoded_string},
-                            headers={'Content-Type': 'application/json'}
-                        )
+                    if results_ok and len(results) > 0:
+                        first_result = results[0]
+                        # Check result structure
+                        result_fields = ['account_id', 'twitter_score_1000', 'grade', 'confidence', 'components', 'explain']
+                        has_result_structure = all(field in first_result for field in result_fields)
                         
-                        if decode_response.status_code == 200:
-                            decode_data = decode_response.json()
-                            if decode_data.get('ok') and 'data' in decode_data:
-                                result_data = decode_data['data']
-                                # Check for required decode response fields
-                                required_fields = ['state', 'valid']
-                                has_required = all(field in result_data for field in required_fields)
-                                
-                                # Validate decoded state matches original
-                                decoded_state = result_data.get('state', {})
-                                version_match = decoded_state.get('version') == test_state['version']
-                                # Backend normalizes 'highlight' to 'focus'
-                                highlight_match = (decoded_state.get('highlight') == test_state['highlight'] or 
-                                                 decoded_state.get('focus') == test_state['highlight'])
-                                
-                                self.log(f"Graph state decode: valid={result_data.get('valid')}, version_match={version_match}, highlight_match={highlight_match}")
-                                return has_required and version_match and highlight_match
+                        # Check score range (0-1000)
+                        score = first_result.get('twitter_score_1000', -1)
+                        score_ok = 0 <= score <= 1000
+                        
+                        # Check grade values
+                        grade = first_result.get('grade')
+                        grade_ok = grade in ['S', 'A', 'B', 'C', 'D']
+                        
+                        # Check confidence levels
+                        confidence = first_result.get('confidence')
+                        confidence_ok = confidence in ['LOW', 'MED', 'HIGH']
+                        
+                        # Check explain structure
+                        explain = first_result.get('explain', {})
+                        explain_fields = ['summary', 'drivers', 'concerns', 'recommendations']
+                        has_explain = all(field in explain for field in explain_fields)
+                        
+                        # Check grade distribution
+                        grade_dist = mock_data.get('grade_distribution', {})
+                        has_grade_dist = all(grade in grade_dist for grade in ['S', 'A', 'B', 'C', 'D'])
+                        
+                        grades_found = [r.get('grade') for r in results]
+                        unique_grades = len(set(grades_found))
+                        
+                        self.log(f"Twitter Score Mock: {len(results)} results, {unique_grades} unique grades, scores range from {min(r.get('twitter_score_1000', 0) for r in results)} to {max(r.get('twitter_score_1000', 0) for r in results)}")
+                        
+                        return (has_required and results_ok and has_result_structure and 
+                               score_ok and grade_ok and confidence_ok and has_explain and has_grade_dist)
+                    
+                    return has_required
             return False
         except Exception as e:
-            self.log(f"Graph state decode API test failed: {e}")
+            self.log(f"Twitter Score Mock API test failed: {e}")
             return False
     
-    def test_graph_state_encode_with_base_url(self) -> bool:
-        """Test encode API with baseUrl parameter creates shareUrl"""
+    def test_twitter_score_compute_api(self) -> bool:
+        """Test POST /api/connections/twitter-score - compute score with base_influence, velocity, red_flags"""
         try:
-            test_state = {
-                "version": "1.0",
-                "filters": {
-                    "profiles": ["influencer"],
-                    "limit_nodes": 40
-                }
+            # Test high influence + low risk = high score scenario
+            high_quality_input = {
+                "account_id": "test_high_quality_001",
+                "base_influence": 850,
+                "x_score": 780,
+                "signal_noise": 8.5,
+                "velocity": 15,
+                "acceleration": 5,
+                "risk_level": "LOW",
+                "red_flags": [],
+                "early_signal_badge": "rising",
+                "early_signal_score": 75
             }
             
-            base_url = "https://example.com/connections/graph"
-            
             response = self.session.post(
-                f"{self.base_url}/api/connections/graph/state/encode",
-                json={"state": test_state, "baseUrl": base_url},
+                f"{self.base_url}/api/connections/twitter-score",
+                json=high_quality_input,
                 headers={'Content-Type': 'application/json'}
             )
             
             if response.status_code == 200:
                 data = response.json()
                 if data.get('ok') and 'data' in data:
-                    encode_data = data['data']
-                    # Check for shareUrl when baseUrl is provided
-                    has_share_url = 'shareUrl' in encode_data
-                    share_url = encode_data.get('shareUrl', '')
+                    result = data['data']
                     
-                    # Validate shareUrl format
-                    share_url_ok = share_url.startswith(base_url) and '?state=' in share_url
+                    # Check result structure
+                    required_fields = ['account_id', 'twitter_score_1000', 'grade', 'confidence', 'components', 'debug', 'explain', 'meta']
+                    has_structure = all(field in result for field in required_fields)
                     
-                    self.log(f"Graph state encode with baseUrl: shareUrl created={has_share_url}")
-                    return has_share_url and share_url_ok
+                    # Validate high quality input produces good score
+                    score = result.get('twitter_score_1000', 0)
+                    grade = result.get('grade')
+                    confidence = result.get('confidence')
+                    
+                    # High influence + low risk should give good score (A or S grade)
+                    good_score = score >= 700  # A grade threshold
+                    good_grade = grade in ['A', 'S']
+                    
+                    # Check components structure
+                    components = result.get('components', {})
+                    component_fields = ['influence', 'quality', 'trend', 'network_proxy', 'consistency', 'risk_penalty']
+                    has_components = all(field in components for field in component_fields)
+                    
+                    # Components should be 0-1 range
+                    components_valid = all(0 <= components.get(field, -1) <= 1 for field in component_fields)
+                    
+                    # Check debug info
+                    debug = result.get('debug', {})
+                    debug_fields = ['weighted_sum_0_1', 'weights', 'penalties']
+                    has_debug = all(field in debug for field in debug_fields)
+                    
+                    # Check explain structure
+                    explain = result.get('explain', {})
+                    explain_fields = ['summary', 'drivers', 'concerns', 'recommendations']
+                    has_explain = all(field in explain for field in explain_fields)
+                    
+                    # Drivers should be populated for high-quality account
+                    has_drivers = len(explain.get('drivers', [])) > 0
+                    
+                    self.log(f"Twitter Score Compute (high quality): score={score}, grade={grade}, confidence={confidence}, drivers={len(explain.get('drivers', []))}")
+                    
+                    return (has_structure and good_score and good_grade and has_components and 
+                           components_valid and has_debug and has_explain and has_drivers)
             return False
         except Exception as e:
-            self.log(f"Graph state encode with baseUrl test failed: {e}")
+            self.log(f"Twitter Score Compute API test failed: {e}")
             return False
     
-    def test_graph_state_validation_errors(self) -> bool:
-        """Test state validation returns proper errors for invalid data"""
+    def test_twitter_score_compute_low_quality(self) -> bool:
+        """Test POST /api/connections/twitter-score with high red_flags + HIGH risk = low score (Grade D/C)"""
         try:
-            # Test with invalid state (missing required structure)
-            invalid_state = {
-                "filters": {
-                    "limit_nodes": "invalid_number"  # Should be number, not string
-                }
+            # Test high risk + red flags = low score scenario
+            low_quality_input = {
+                "account_id": "test_low_quality_002",
+                "base_influence": 420,
+                "x_score": 280,
+                "signal_noise": 2.5,
+                "velocity": 3,
+                "acceleration": -5,
+                "risk_level": "HIGH",
+                "red_flags": ["REPOST_FARM", "BOT_LIKE_PATTERN", "FAKE_ENGAGEMENT"],
+                "early_signal_badge": "none",
+                "early_signal_score": 15
             }
             
             response = self.session.post(
-                f"{self.base_url}/api/connections/graph/state/encode",
-                json={"state": invalid_state},
+                f"{self.base_url}/api/connections/twitter-score",
+                json=low_quality_input,
+                headers={'Content-Type': 'application/json'}
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('ok') and 'data' in data:
+                    result = data['data']
+                    
+                    score = result.get('twitter_score_1000', 1000)
+                    grade = result.get('grade')
+                    
+                    # High risk + red flags should give low score (C or D grade)
+                    low_score = score <= 550  # Below B grade threshold  
+                    low_grade = grade in ['C', 'D']
+                    
+                    # Check that concerns are populated for risky account
+                    explain = result.get('explain', {})
+                    has_concerns = len(explain.get('concerns', [])) > 0
+                    
+                    # Check that penalties are applied
+                    debug = result.get('debug', {})
+                    penalties = debug.get('penalties', {})
+                    has_penalties = penalties.get('red_flags_penalty', 0) > 0 or penalties.get('risk_penalty', 0) > 0
+                    
+                    self.log(f"Twitter Score Compute (low quality): score={score}, grade={grade}, concerns={len(explain.get('concerns', []))}, penalties={penalties}")
+                    
+                    return low_score and low_grade and has_concerns and has_penalties
+            return False
+        except Exception as e:
+            self.log(f"Twitter Score Compute Low Quality test failed: {e}")
+            return False
+    
+    def test_twitter_score_batch_api(self) -> bool:
+        """Test POST /api/connections/twitter-score/batch - batch compute for multiple accounts"""
+        try:
+            # Test batch with multiple different quality accounts
+            batch_input = {
+                "accounts": [
+                    {
+                        "account_id": "batch_whale_001",
+                        "base_influence": 920,
+                        "x_score": 820,
+                        "signal_noise": 8.0,
+                        "velocity": 12,
+                        "acceleration": 3,
+                        "risk_level": "LOW",
+                        "red_flags": [],
+                        "early_signal_badge": "breakout"
+                    },
+                    {
+                        "account_id": "batch_retail_002",
+                        "base_influence": 350,
+                        "x_score": 450,
+                        "signal_noise": 6.0,
+                        "velocity": 8,
+                        "acceleration": 2,
+                        "risk_level": "MED",
+                        "red_flags": ["VIRAL_SPIKE"],
+                        "early_signal_badge": "rising"
+                    },
+                    {
+                        "account_id": "batch_farm_003",
+                        "base_influence": 580,
+                        "x_score": 200,
+                        "signal_noise": 1.5,
+                        "velocity": -2,
+                        "acceleration": -8,
+                        "risk_level": "HIGH",
+                        "red_flags": ["REPOST_FARM", "BOT_LIKE_PATTERN"],
+                        "early_signal_badge": "none"
+                    }
+                ]
+            }
+            
+            response = self.session.post(
+                f"{self.base_url}/api/connections/twitter-score/batch",
+                json=batch_input,
+                headers={'Content-Type': 'application/json'}
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('ok') and 'data' in data:
+                    batch_result = data['data']
+                    
+                    # Check batch result structure
+                    required_fields = ['version', 'computed_at', 'results', 'stats']
+                    has_structure = all(field in batch_result for field in required_fields)
+                    
+                    results = batch_result.get('results', [])
+                    correct_count = len(results) == 3
+                    
+                    # Check stats structure
+                    stats = batch_result.get('stats', {})
+                    stats_fields = ['total', 'by_grade', 'avg_score']
+                    has_stats = all(field in stats for field in stats_fields)
+                    
+                    # Verify different grades produced
+                    if correct_count and len(results) > 0:
+                        grades = [r.get('grade') for r in results]
+                        scores = [r.get('twitter_score_1000') for r in results]
+                        
+                        # Should have variety in scores/grades
+                        unique_grades = len(set(grades))
+                        score_range = max(scores) - min(scores) if scores else 0
+                        
+                        # Check by_grade stats match results
+                        by_grade = stats.get('by_grade', {})
+                        grade_stats_match = sum(by_grade.values()) == len(results)
+                        
+                        self.log(f"Twitter Score Batch: {len(results)} results, {unique_grades} unique grades, score range {score_range}, avg={stats.get('avg_score')}")
+                        
+                        return (has_structure and correct_count and has_stats and 
+                               unique_grades >= 2 and score_range >= 100 and grade_stats_match)
+                    
+                    return has_structure and correct_count and has_stats
+            return False
+        except Exception as e:
+            self.log(f"Twitter Score Batch API test failed: {e}")
+            return False
+    
+    def test_twitter_score_config_api(self) -> bool:
+        """Test GET /api/connections/twitter-score/config - current configuration"""
+        try:
+            response = self.session.get(f"{self.base_url}/api/connections/twitter-score/config")
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('ok') and 'data' in data:
+                    config_data = data['data']
+                    
+                    # Check config structure
+                    required_fields = ['version', 'weights', 'normalize', 'trend', 'proxies', 'penalties', 'grades', 'confidence']
+                    has_structure = all(field in config_data for field in required_fields)
+                    
+                    # Validate version
+                    version_ok = config_data.get('version') == '1.0.0'
+                    
+                    # Validate weights (should sum to 1.0)
+                    weights = config_data.get('weights', {})
+                    expected_weights = ['influence', 'quality', 'trend', 'network_proxy', 'consistency']
+                    has_all_weights = all(weight in weights for weight in expected_weights)
+                    
+                    # Check weight values based on config (35%, 20%, 20%, 15%, 10%)
+                    if has_all_weights:
+                        influence_weight = weights.get('influence') == 0.35
+                        quality_weight = weights.get('quality') == 0.20
+                        trend_weight = weights.get('trend') == 0.20
+                        network_weight = weights.get('network_proxy') == 0.15
+                        consistency_weight = weights.get('consistency') == 0.10
+                        weights_correct = all([influence_weight, quality_weight, trend_weight, network_weight, consistency_weight])
+                    else:
+                        weights_correct = False
+                    
+                    # Validate grades thresholds
+                    grades = config_data.get('grades', [])
+                    if len(grades) >= 5:
+                        # Check S >= 850, A >= 700, B >= 550, C >= 400, D >= 0
+                        grades_by_name = {g['grade']: g['min'] for g in grades}
+                        thresholds_correct = (
+                            grades_by_name.get('S', 0) >= 850 and
+                            grades_by_name.get('A', 0) >= 700 and
+                            grades_by_name.get('B', 0) >= 550 and
+                            grades_by_name.get('C', 0) >= 400 and
+                            grades_by_name.get('D', -1) >= 0
+                        )
+                    else:
+                        thresholds_correct = False
+                    
+                    # Validate penalties structure
+                    penalties = config_data.get('penalties', {})
+                    penalty_fields = ['risk_level', 'red_flags', 'max_total_penalty']
+                    has_penalties = all(field in penalties for field in penalty_fields)
+                    
+                    # Check proxies (mocked APIs)
+                    proxies = config_data.get('proxies', {})
+                    proxy_fields = ['network_from_early_signal', 'consistency_default']
+                    has_proxies = all(field in proxies for field in proxy_fields)
+                    
+                    # Validate consistency default (should be 0.55 per requirement)
+                    consistency_proxy = proxies.get('consistency_default') == 0.55
+                    
+                    self.log(f"Twitter Score Config: version={config_data.get('version')}, weights_correct={weights_correct}, thresholds_correct={thresholds_correct}, consistency_proxy={consistency_proxy}")
+                    
+                    return (has_structure and version_ok and has_all_weights and weights_correct and 
+                           thresholds_correct and has_penalties and has_proxies and consistency_proxy)
+            return False
+        except Exception as e:
+            self.log(f"Twitter Score Config API test failed: {e}")
+            return False
+    
+    def test_twitter_score_validation_errors(self) -> bool:
+        """Test validation errors for invalid inputs"""
+        try:
+            # Test missing account_id
+            invalid_input = {
+                "base_influence": 500,
+                "x_score": 400
+            }
+            
+            response = self.session.post(
+                f"{self.base_url}/api/connections/twitter-score",
+                json=invalid_input,
                 headers={'Content-Type': 'application/json'}
             )
             
             if response.status_code == 400:
                 data = response.json()
-                # Should return error for invalid state
                 has_error = not data.get('ok') and 'error' in data
-                self.log(f"Graph state validation: properly rejects invalid state")
+                error_mentions_account_id = 'account_id' in data.get('error', '').lower()
+                
+                self.log(f"Twitter Score Validation: properly rejects missing account_id")
+                return has_error and error_mentions_account_id
+            return False
+        except Exception as e:
+            self.log(f"Twitter Score Validation test failed: {e}")
+            return False
+    
+    def test_batch_validation_errors(self) -> bool:
+        """Test batch validation errors"""
+        try:
+            # Test empty accounts array
+            invalid_batch = {
+                "accounts": []
+            }
+            
+            response = self.session.post(
+                f"{self.base_url}/api/connections/twitter-score/batch",
+                json=invalid_batch,
+                headers={'Content-Type': 'application/json'}
+            )
+            
+            if response.status_code == 400:
+                data = response.json()
+                has_error = not data.get('ok') and 'error' in data
+                
+                self.log(f"Twitter Score Batch Validation: properly rejects empty accounts")
                 return has_error
             return False
         except Exception as e:
-            self.log(f"Graph state validation test failed: {e}")
+            self.log(f"Twitter Score Batch Validation test failed: {e}")
+            return False
+    
+    def test_score_formula_verification(self) -> bool:
+        """Test that score formula works as documented: high influence + low risk = high score"""
+        try:
+            # Create specific test case to verify formula
+            formula_test_input = {
+                "account_id": "formula_test_001",
+                "base_influence": 900,  # High influence
+                "x_score": 800,        # High quality
+                "signal_noise": 9,     # High signal/noise
+                "velocity": 20,        # Good growth
+                "acceleration": 8,     # Good acceleration
+                "risk_level": "LOW",   # Low risk
+                "red_flags": [],       # No red flags
+                "early_signal_badge": "breakout",
+                "early_signal_score": 85
+            }
+            
+            response = self.session.post(
+                f"{self.base_url}/api/connections/twitter-score",
+                json=formula_test_input,
+                headers={'Content-Type': 'application/json'}
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('ok') and 'data' in data:
+                    result = data['data']
+                    
+                    score = result.get('twitter_score_1000', 0)
+                    grade = result.get('grade')
+                    components = result.get('components', {})
+                    debug = result.get('debug', {})
+                    
+                    # Verify high influence translates to high component score
+                    influence_component = components.get('influence', 0)
+                    influence_good = influence_component >= 0.8  # Should be high due to base_influence=900
+                    
+                    # Verify quality component
+                    quality_component = components.get('quality', 0)
+                    quality_good = quality_component >= 0.7   # Should be high due to x_score=800 + signal_noise=9
+                    
+                    # Verify trend component
+                    trend_component = components.get('trend', 0)
+                    trend_good = trend_component >= 0.6       # Should be good due to positive velocity/acceleration
+                    
+                    # Verify low risk penalty
+                    risk_penalty = components.get('risk_penalty', 1)
+                    low_risk = risk_penalty <= 0.15          # Should be low due to LOW risk + no red flags
+                    
+                    # Overall score should be high (A or S grade)
+                    high_score = score >= 700 and grade in ['A', 'S']
+                    
+                    # Verify weighted sum makes sense
+                    weighted_sum = debug.get('weighted_sum_0_1', 0)
+                    weighted_sum_reasonable = 0.7 <= weighted_sum <= 1.0
+                    
+                    self.log(f"Formula Test: score={score}, grade={grade}, influence={influence_component:.2f}, quality={quality_component:.2f}, trend={trend_component:.2f}, risk_penalty={risk_penalty:.2f}")
+                    
+                    return (influence_good and quality_good and trend_good and low_risk and 
+                           high_score and weighted_sum_reasonable)
+            return False
+        except Exception as e:
+            self.log(f"Score Formula Verification test failed: {e}")
             return False
     
     def run_all_tests(self) -> Dict[str, Any]:
-        """Run all Connections dropdown tests and return results"""
-        self.log("🚀 Starting Connections Module Backend Testing")
+        """Run all Twitter Score API tests and return results"""
+        self.log("🚀 Starting Twitter Score v1.0 Backend Testing")
         self.log(f"Testing against: {self.base_url}")
         
         # Core API Health Tests
         self.run_test("Backend health /api/health", self.test_health_check)
         self.run_test("Connections module health /api/connections/health", self.test_connections_health)
         
-        # Mock API Tests
-        self.run_test("Mock score API /api/connections/score/mock", self.test_mock_score_api)
-        self.run_test("Mock early signal /api/connections/early-signal/mock", self.test_mock_early_signal_api)
+        # Twitter Score API Tests - Phase 1.1
+        self.run_test("Twitter Score Info API /api/connections/twitter-score/info", self.test_twitter_score_info_api)
+        self.run_test("Twitter Score Mock API /api/connections/twitter-score/mock", self.test_twitter_score_mock_api)
+        self.run_test("Twitter Score Config API /api/connections/twitter-score/config", self.test_twitter_score_config_api)
         
-        # Admin Authentication Tests
-        self.run_test("Admin login /api/admin/auth/login", self.test_admin_login_api)
-        self.run_test("Admin connections overview /api/admin/connections/overview", self.test_admin_connections_overview)
+        # Core Compute Functionality
+        self.run_test("Twitter Score Compute API (high quality) /api/connections/twitter-score", self.test_twitter_score_compute_api)
+        self.run_test("Twitter Score Compute API (low quality) - high red_flags + HIGH risk = low score", self.test_twitter_score_compute_low_quality)
+        self.run_test("Twitter Score Batch API /api/connections/twitter-score/batch", self.test_twitter_score_batch_api)
         
-        # Connections API Tests
-        self.run_test("Connections Accounts API /api/connections/accounts", self.test_connections_accounts_api)
-        self.run_test("Connections Graph API POST /api/connections/graph", self.test_connections_graph_api)
-        self.run_test("Connections Graph API GET /api/connections/graph", self.test_connections_graph_get)
-        self.run_test("Connections Compare API /api/connections/compare", self.test_connections_compare_api)
+        # Formula & Logic Tests
+        self.run_test("Score Formula Verification - high influence + low risk = high score", self.test_score_formula_verification)
         
-        # Graph-specific API Tests
-        self.run_test("Graph Suggestions API /api/connections/graph/suggestions", self.test_graph_suggestions_api)
-        self.run_test("Graph Ranking API /api/connections/graph/ranking", self.test_graph_ranking_api)
-        self.run_test("Graph Node Details API /api/connections/graph/node/{id}", self.test_graph_node_details_api)
-        
-        # P2.2: Graph State Sharing API Tests
-        self.run_test("Graph State Info API /api/connections/graph/state/info", self.test_graph_state_info_api)
-        self.run_test("Graph State Encode API /api/connections/graph/state/encode", self.test_graph_state_encode_api)
-        self.run_test("Graph State Decode API /api/connections/graph/state/decode", self.test_graph_state_decode_api)
-        self.run_test("Graph State Encode with BaseUrl /api/connections/graph/state/encode", self.test_graph_state_encode_with_base_url)
-        self.run_test("Graph State Validation Errors", self.test_graph_state_validation_errors)
+        # Validation Tests
+        self.run_test("Twitter Score Input Validation", self.test_twitter_score_validation_errors)
+        self.run_test("Twitter Score Batch Validation", self.test_batch_validation_errors)
         
         # Results Summary
         success_rate = (self.tests_passed / self.tests_run * 100) if self.tests_run > 0 else 0
         
-        self.log(f"\n📊 Connections Module Backend Test Results:")
+        self.log(f"\n📊 Twitter Score v1.0 Backend Test Results:")
         self.log(f"✅ Passed: {self.tests_passed}/{self.tests_run} ({success_rate:.1f}%)")
         
         if self.failed_tests:
@@ -634,15 +618,15 @@ class ConnectionsDropdownTester:
 
 def main():
     """Main test execution"""
-    tester = ConnectionsDropdownTester()
+    tester = TwitterScoreTester()
     results = tester.run_all_tests()
     
     # Exit with appropriate code
     if results['success_rate'] >= 80:
-        print(f"\n🎉 Connections Dropdown Backend tests PASSED with {results['success_rate']:.1f}% success rate")
+        print(f"\n🎉 Twitter Score v1.0 Backend tests PASSED with {results['success_rate']:.1f}% success rate")
         return 0
     else:
-        print(f"\n💥 Connections Dropdown Backend tests FAILED with {results['success_rate']:.1f}% success rate")
+        print(f"\n💥 Twitter Score v1.0 Backend tests FAILED with {results['success_rate']:.1f}% success rate")
         return 1
 
 if __name__ == "__main__":
