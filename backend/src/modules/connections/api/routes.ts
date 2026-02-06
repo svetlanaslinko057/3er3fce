@@ -1420,6 +1420,15 @@ export async function registerConnectionsRoutes(app: FastifyInstance): Promise<v
   const { graphRoutes } = await import('./graph.routes.js');
   await app.register(graphRoutes);
 
+  // ============================================================
+  // TWITTER SCORE API v1.0 (Phase 1.1)
+  // ============================================================
+  
+  // Register Twitter Score routes
+  const { twitterScoreRoutes } = await import('./twitter-score.routes.js');
+  await app.register(twitterScoreRoutes);
+
   console.log('[Connections] API routes registered at /api/connections');
   console.log('[Connections] Graph API registered at /api/connections/graph');
+  console.log('[Connections] Twitter Score API registered at /api/connections/twitter-score');
 }
