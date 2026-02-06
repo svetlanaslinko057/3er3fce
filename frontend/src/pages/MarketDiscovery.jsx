@@ -211,7 +211,7 @@ function UnusualActivityBlock() {
         What's happening physically on-chain — activity, deviations, new actors
       </p>
       
-      {/* Tabs (базовый слой - разные типы данных) */}
+      {/* Tabs (base layer - different data types) */}
       <div className="flex gap-1 mb-4 bg-gray-100 rounded-lg p-1">
         {tabs.map(tab => (
           <button
