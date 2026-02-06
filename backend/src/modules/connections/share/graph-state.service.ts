@@ -10,6 +10,8 @@
 
 export interface GraphStateV1 {
   version: '1.0';
+  
+  // UI Filters
   filters?: {
     profiles?: string[];
     early_signal?: string[];
@@ -18,18 +20,36 @@ export interface GraphStateV1 {
     hide_isolated?: boolean;
     limit_nodes?: number;
   };
-  selectedNodes?: string[];
+  
+  // Selection
+  selected_nodes?: string[];  // account_id[]
+  selectedNodes?: string[];   // alias for backward compat
+  
+  // Compare mode
   compare?: {
-    nodeA?: string;
-    nodeB?: string;
+    left?: string;
+    right?: string;
+    nodeA?: string;  // alias
+    nodeB?: string;  // alias
     active?: boolean;
+  } | null;
+  
+  // View state
+  view?: 'graph' | 'table' | 'compare';
+  
+  // Table sorting
+  sort?: {
+    field?: string;
+    order?: 'asc' | 'desc';
   };
-  view?: 'graph' | 'table';
   table?: {
     sortBy?: string;
     order?: 'asc' | 'desc';
   };
-  highlight?: string; // Single node to highlight on load
+  
+  // Focus/Highlight
+  focus?: string;       // account_id to focus on load
+  highlight?: string;   // alias for focus
 }
 
 const CURRENT_VERSION = '1.0';
