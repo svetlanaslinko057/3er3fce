@@ -374,8 +374,8 @@ class AudienceQualityTester:
         return success
 
     def test_admin_config_get(self):
-        """Test GET /api/admin/connections/audience-quality/config"""
-        url = f"{self.base_url}/api/admin/connections/audience-quality/config"
+        """Test GET /api/connections/admin/connections/audience-quality/config"""
+        url = f"{self.base_url}/api/connections/admin/connections/audience-quality/config"
         
         self.tests_run += 1
         self.log(f"🔍 Testing Admin Config Get...")
