@@ -63,11 +63,24 @@
     - influence (35%) - base engagement/reach
     - quality (20%) - x_score + signal/noise
     - trend (20%) - velocity + acceleration
-    - network_proxy (15%) - proxy until follower data
+    - network_proxy (15%) - now uses audience_quality when available
     - consistency (10%) - proxy until timeseries
   - Penalty system for risk_level and red_flags
   - Explainable: drivers, concerns, recommendations
   - API: /api/connections/twitter-score/*
+
+- **2026-02-06**: **PHASE 1.2 - Audience Quality Engine v1.0**
+  - Audience quality assessment with proxy signals
+  - Components:
+    - purity (45%) - inverse of overlap + bot risk
+    - smart_followers_proxy (30%) - signal quality + purity
+    - signal_quality (15%) - x_score + signal/noise
+    - consistency (10%) - behavioral consistency
+  - Overlap pressure calculation from jaccard + shared engaged ids
+  - Bot risk from red flags (AUDIENCE_OVERLAP, BOT_LIKE_PATTERN, REPOST_FARM, etc.)
+  - Integrated into Twitter Score (replaces network_proxy)
+  - Admin config for weights and thresholds
+  - API: /api/connections/audience-quality/*
 
 ## P2.2 Share Graph State - Contract
 
