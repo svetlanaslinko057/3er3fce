@@ -295,25 +295,31 @@ class ConnectionsDropdownTester:
     
     def run_all_tests(self) -> Dict[str, Any]:
         """Run all Connections dropdown tests and return results"""
-        self.log("🚀 Starting Connections Dropdown Backend Testing")
+        self.log("🚀 Starting Connections Module Backend Testing")
         self.log(f"Testing against: {self.base_url}")
         
         # Core API Health Tests
-        self.run_test("Backend health check /api/health", self.test_health_check)
-        self.run_test("Connections health /api/connections/health", self.test_connections_health)
+        self.run_test("Backend health /api/health", self.test_health_check)
+        self.run_test("Connections module health /api/connections/health", self.test_connections_health)
         
-        # Connections Dropdown API Tests
-        self.run_test("Connections Accounts API /api/connections/accounts (Influencers tab)", self.test_connections_accounts_api)
-        self.run_test("Connections Graph API /api/connections/graph (Graph tab)", self.test_connections_graph_api)
+        # Mock API Tests
+        self.run_test("Mock score API /api/connections/score/mock", self.test_mock_score_api)
+        self.run_test("Mock early signal /api/connections/early-signal/mock", self.test_mock_early_signal_api)
+        
+        # Admin Authentication Tests
+        self.run_test("Admin login /api/admin/auth/login", self.test_admin_login_api)
+        self.run_test("Admin connections overview /api/admin/connections/overview", self.test_admin_connections_overview)
+        
+        # Connections API Tests
+        self.run_test("Connections Accounts API /api/connections/accounts", self.test_connections_accounts_api)
+        self.run_test("Connections Graph API POST /api/connections/graph", self.test_connections_graph_api)
+        self.run_test("Connections Graph API GET /api/connections/graph", self.test_connections_graph_get)
         self.run_test("Connections Compare API /api/connections/compare", self.test_connections_compare_api)
-        
-        # Additional Graph API Tests
-        self.run_test("Connections Graph GET /api/connections/graph", self.test_connections_graph_get)
         
         # Results Summary
         success_rate = (self.tests_passed / self.tests_run * 100) if self.tests_run > 0 else 0
         
-        self.log(f"\n📊 Connections Dropdown Backend Test Results:")
+        self.log(f"\n📊 Connections Module Backend Test Results:")
         self.log(f"✅ Passed: {self.tests_passed}/{self.tests_run} ({success_rate:.1f}%)")
         
         if self.failed_tests:
