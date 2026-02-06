@@ -415,8 +415,8 @@ class AudienceQualityTester:
             return False
 
     def test_admin_config_patch(self):
-        """Test PATCH /api/admin/connections/audience-quality/config"""
-        url = f"{self.base_url}/api/admin/connections/audience-quality/config"
+        """Test PATCH /api/connections/admin/connections/audience-quality/config"""
+        url = f"{self.base_url}/api/connections/admin/connections/audience-quality/config"
         
         # Test with valid weight update
         patch_data = {
